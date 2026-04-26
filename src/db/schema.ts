@@ -1,0 +1,58 @@
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+
+export const businessProfile = sqliteTable('business_profile', {
+  id: integer('id').primaryKey(),
+  name: text('name').notNull(),
+  address: text('address'),
+  phone: text('phone'),
+  email: text('email'),
+  bankName: text('bank_name'),
+  bankAccount: text('bank_account'),
+  logoUri: text('logo_uri'),
+  currency: text('currency').default('₹'),
+  invoicePrefix: text('invoice_prefix').default('INV'),
+});
+
+export const clients = sqliteTable('clients', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  address: text('address'),
+});
+
+export const invoices = sqliteTable('invoices', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  invoiceNumber: text('invoice_number').notNull().unique(),
+  date: text('date').notNull(),
+  dueDate: text('due_date'),
+  status: text('status').notNull().default('Draft'), // Draft, Sent, Paid, Overdue
+  clientId: integer('client_id').references(() => clients.id),
+  subtotal: real('subtotal').notNull().default(0),
+  taxRate: real('tax_rate').notNull().default(0),
+  taxAmount: real('tax_amount').notNull().default(0),
+  discountRate: real('discount_rate').notNull().default(0),
+  discountAmount: real('discount_amount').notNull().default(0),
+  total: real('total').notNull().default(0),
+  notes: text('notes'),
+});
+
+export const invoiceItems = sqliteTable('invoice_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  invoiceId: integer('invoice_id').notNull().references(() => invoices.id, { onDelete: 'cascade' }),
+  description: text('description').notNull(),
+  partNo: text('part_no'),
+  quantity: real('quantity').notNull().default(1),
+  unitPrice: real('unit_price').notNull().default(0),
+  taxRate: real('tax_rate').notNull().default(0),
+  total: real('total').notNull().default(0),
+});
+
+export const inventory = sqliteTable('inventory', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  partNo: text('part_no'),
+  price: real('price').notNull().default(0),
+  taxRate: real('tax_rate').notNull().default(0),
+});
+
