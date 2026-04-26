@@ -70,9 +70,12 @@ export const boms = sqliteTable('boms', {
   date: text('date').notNull(),
   revision: integer('revision').notNull().default(0),
   parentId: integer('parent_id'), // To link revisions of the same project
+  globalTaxRate: real('global_tax_rate').notNull().default(0),
+  globalTaxAmount: real('global_tax_amount').notNull().default(0),
   totalCost: real('total_cost').notNull().default(0),
   status: text('status').notNull().default('Draft'),
 });
+
 
 export const bomItems = sqliteTable('bom_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -84,8 +87,10 @@ export const bomItems = sqliteTable('bom_items', {
   uom: text('uom'),
   quantity: real('quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull().default(0),
+  taxRate: real('tax_rate').notNull().default(0),
   total: real('total').notNull().default(0),
   remark: text('remark'),
 });
+
 
 

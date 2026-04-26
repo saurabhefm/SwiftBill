@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { FileText, Settings as SettingsIcon, Package } from 'lucide-react-native';
+import { FileText, Settings as SettingsIcon, Package, Briefcase } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -30,6 +30,13 @@ export default function TabLayout() {
         options={{
           title: 'Invoices',
           tabBarIcon: ({ color }) => <FileText size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="boms"
+        options={{
+          title: 'BOM',
+          tabBarIcon: ({ color }) => <Briefcase size={24} color={color} />,
         }}
       />
       <Tabs.Screen

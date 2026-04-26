@@ -12,17 +12,22 @@ interface InventoryItem {
   id: number;
   name: string;
   partNo: string | null;
+  specifications: string | null;
+  make: string | null;
+  uom: string | null;
   price: number;
   taxRate: number;
 }
+
 
 export default function InventoryScreen() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentItem, setCurrentItem] = useState<Partial<InventoryItem>>({
-    name: '', partNo: '', price: 0, taxRate: 0
+    name: '', partNo: '', specifications: '', make: '', uom: '', price: 0, taxRate: 0
   });
   const insets = useSafeAreaInsets();
+
 
   const fetchInventory = async () => {
     try {
@@ -49,9 +54,13 @@ export default function InventoryScreen() {
       const itemData = {
         name: currentItem.name,
         partNo: currentItem.partNo || null,
+        specifications: currentItem.specifications || null,
+        make: currentItem.make || null,
+        uom: currentItem.uom || null,
         price: Number(currentItem.price) || 0,
         taxRate: Number(currentItem.taxRate) || 0,
       };
+
 
       if (currentItem.id) {
         await db.update(inventory).set(itemData).where(eq(inventory.id, currentItem.id));
@@ -60,8 +69,9 @@ export default function InventoryScreen() {
       }
       
       setIsEditing(false);
-      setCurrentItem({ name: '', partNo: '', price: 0, taxRate: 0 });
+      setCurrentItem({ name: '', partNo: '', specifications: '', make: '', uom: '', price: 0, taxRate: 0 });
       fetchInventory();
+
     } catch (error) {
       console.error('Error saving item:', error);
       Alert.alert('Error', 'Failed to save item');
@@ -86,9 +96,10 @@ export default function InventoryScreen() {
     if (item) {
       setCurrentItem(item);
     } else {
-      setCurrentItem({ name: '', partNo: '', price: 0, taxRate: 0 });
+      setCurrentItem({ name: '', partNo: '', specifications: '', make: '', uom: '', price: 0, taxRate: 0 });
     }
     setIsEditing(true);
+
   };
 
   if (isEditing) {
@@ -106,6 +117,25 @@ export default function InventoryScreen() {
             <Text style={styles.label}>Part / SKU No</Text>
             <TextInput style={styles.input} value={currentItem.partNo || ''} onChangeText={(v) => setCurrentItem({...currentItem, partNo: v})} placeholder="e.g. SV-001" />
           </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Make / Brand</Text>
+            <TextInput style={styles.input} value={currentItem.make || ''} onChangeText={(v) => setCurrentItem({...currentItem, make: v})} placeholder="e.g. Tata / ABB / Schneider" />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>UOM (Unit of Measure)</Text>
+            <TextInput style={styles.input} value={currentItem.uom || ''} onChangeText={(v) => setCurrentItem({...currentItem, uom: v})} placeholder="e.g. MWp / Nos / Mtrs" />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Technical Specifications</Text>
+            <TextInput 
+              style={[styles.input, { height: 100, textAlignVertical: 'top' }]} 
+              value={currentItem.specifications || ''} 
+              onChangeText={(v) => setCurrentItem({...currentItem, specifications: v})} 
+              multiline 
+              placeholder="Detailed technical specs..." 
+            />
+          </View>
+
           <View style={styles.row}>
             <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
               <Text style={styles.label}>Default Price</Text>
@@ -157,9 +187,14 @@ export default function InventoryScreen() {
           <View style={styles.card}>
             <View style={styles.cardInfo}>
               <Text style={styles.itemName}>{item.name}</Text>
-              {item.partNo && <Text style={styles.itemPart}>Part: {item.partNo}</Text>}
+              <View style={styles.tagContainer}>
+                {item.partNo && <Text style={styles.tag}>Part: {item.partNo}</Text>}
+                {item.make && <Text style={styles.tag}>Make: {item.make}</Text>}
+                {item.uom && <Text style={styles.tag}>UOM: {item.uom}</Text>}
+              </View>
               <Text style={styles.itemPrice}>₹{item.price.toFixed(2)} <Text style={styles.itemTax}>(+{item.taxRate}% GST)</Text></Text>
             </View>
+
             <View style={styles.cardActions}>
               <TouchableOpacity style={styles.iconButton} onPress={() => openEditor(item)}>
                 <Edit2 size={20} color="#4B5563" />
@@ -280,6 +315,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#6366F1',
+    marginTop: 8,
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  tag: {
+    fontSize: 11,
+    backgroundColor: '#F3F4F6',
+    color: '#6B7280',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginRight: 6,
+    marginBottom: 4,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   itemTax: {
     fontSize: 14,
