@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Platform, View, Text } from 'react-native';
+import { StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Platform, View, Text, Modal, FlatList } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { db } from '@/src/db/client';
-import { invoices, invoiceItems, clients, businessProfile } from '@/src/db/schema';
+import { invoices, invoiceItems, clients, inventory } from '@/src/db/schema';
 import { eq } from 'drizzle-orm';
 import { useInvoiceNumber } from '@/src/hooks/useInvoiceNumber';
 import { useInvoiceCalculator } from '@/src/hooks/useInvoiceCalculator';
@@ -18,9 +18,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 interface Item {
   id?: number;
   description: string;
+  partNo?: string;
   quantity: string;
   unitPrice: string;
+  taxRate: string;
 }
+
 
 export default function CreateInvoiceScreen() {
   const { id } = useLocalSearchParams();
@@ -30,21 +33,26 @@ export default function CreateInvoiceScreen() {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [clientName, setClientName] = useState('');
   const [date, setDate] = useState(new Date().toISOString());
-  const [items, setItems] = useState<Item[]>([{ description: '', quantity: '1', unitPrice: '0' }]);
-  const [taxRate, setTaxRate] = useState('0');
+  const [items, setItems] = useState<Item[]>([{ description: '', partNo: '', quantity: '1', unitPrice: '0', taxRate: '0' }]);
   const [discountRate, setDiscountRate] = useState('0');
   const [notes, setNotes] = useState('');
+  
+  // Inventory Modal State
+  const [inventoryList, setInventoryList] = useState<any[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
 
   const parsedItems = items.map(item => ({
     quantity: parseFloat(item.quantity) || 0,
     unitPrice: parseFloat(item.unitPrice) || 0,
+    taxRate: parseFloat(item.taxRate) || 0,
   }));
 
   const { subtotal, taxAmount, discountAmount, total } = useInvoiceCalculator(
     parsedItems,
-    parseFloat(taxRate) || 0,
     parseFloat(discountRate) || 0
   );
+
 
   useEffect(() => {
     if (!isEditing && nextInvoiceNumber) {
@@ -56,16 +64,26 @@ export default function CreateInvoiceScreen() {
     if (isEditing) {
       loadInvoice();
     }
+    loadInventory();
   }, [id]);
+
+  const loadInventory = async () => {
+    try {
+      const results = await db.select().from(inventory);
+      setInventoryList(results);
+    } catch (error) {
+      console.error('Error loading inventory:', error);
+    }
+  };
+
 
   const loadInvoice = async () => {
     try {
       const invId = parseInt(id as string);
       const [inv] = await db.select().from(invoices).where(eq(invoices.id, invId));
-      if (inv) {
+        if (inv) {
         setInvoiceNumber(inv.invoiceNumber);
         setDate(inv.date);
-        setTaxRate(inv.taxRate.toString());
         setDiscountRate(inv.discountRate.toString());
         setNotes(inv.notes || '');
         
@@ -77,20 +95,23 @@ export default function CreateInvoiceScreen() {
 
         // Load items
         const results = await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, invId));
-        setItems(results.map(i => ({
+        setItems(results.map((i: any) => ({
           id: i.id,
           description: i.description,
+          partNo: i.partNo || '',
           quantity: i.quantity.toString(),
           unitPrice: i.unitPrice.toString(),
+          taxRate: i.taxRate?.toString() || '0',
         })));
       }
+
     } catch (error) {
       console.error('Error loading invoice:', error);
     }
   };
 
   const addItem = () => {
-    setItems([...items, { description: '', quantity: '1', unitPrice: '0' }]);
+    setItems([...items, { description: '', partNo: '', quantity: '1', unitPrice: '0', taxRate: '0' }]);
   };
 
   const removeItem = (index: number) => {
@@ -105,6 +126,21 @@ export default function CreateInvoiceScreen() {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
+  };
+
+  const selectInventoryItem = (invItem: any) => {
+    if (activeItemIndex !== null) {
+      updateItem(activeItemIndex, 'description', invItem.name);
+      updateItem(activeItemIndex, 'partNo', invItem.partNo || '');
+      updateItem(activeItemIndex, 'unitPrice', invItem.price.toString());
+      updateItem(activeItemIndex, 'taxRate', invItem.taxRate.toString());
+    }
+    setModalVisible(false);
+  };
+
+  const openInventoryModal = (index: number) => {
+    setActiveItemIndex(index);
+    setModalVisible(true);
   };
 
   const handleSave = async () => {
@@ -129,7 +165,7 @@ export default function CreateInvoiceScreen() {
         date,
         clientId,
         subtotal,
-        taxRate: parseFloat(taxRate) || 0,
+        taxRate: 0, // Global tax is now 0
         taxAmount,
         discountRate: parseFloat(discountRate) || 0,
         discountAmount,
@@ -154,12 +190,14 @@ export default function CreateInvoiceScreen() {
       const itemsToInsert = items.map(item => ({
         invoiceId: finalInvoiceId,
         description: item.description || 'No Description',
+        partNo: item.partNo || null,
         quantity: parseFloat(item.quantity) || 0,
         unitPrice: parseFloat(item.unitPrice) || 0,
+        taxRate: parseFloat(item.taxRate) || 0,
         total: (parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0),
       }));
 
-      await db.insert(invoiceItems).values(itemsToInsert);
+      await db.insert(invoiceItems).values(itemsToInsert as any);
 
       Alert.alert('Success', `Invoice ${isEditing ? 'updated' : 'created'} successfully!`);
       router.back();
@@ -181,7 +219,7 @@ export default function CreateInvoiceScreen() {
           invoiceNumber,
           date,
           subtotal,
-          taxRate: parseFloat(taxRate) || 0,
+          taxRate: 0,
           taxAmount,
           discountRate: parseFloat(discountRate) || 0,
           discountAmount,
@@ -190,6 +228,8 @@ export default function CreateInvoiceScreen() {
         },
         items.map(i => ({
           description: i.description,
+          partNo: i.partNo,
+          taxRate: parseFloat(i.taxRate) || 0,
           quantity: parseFloat(i.quantity) || 0,
           unitPrice: parseFloat(i.unitPrice) || 0,
           total: (parseFloat(i.quantity) || 0) * (parseFloat(i.unitPrice) || 0),
@@ -244,63 +284,68 @@ export default function CreateInvoiceScreen() {
           </View>
 
           {items.map((item, index) => (
-            <View key={index} style={styles.itemRow}>
-              <View style={{ flex: 3 }}>
-                <TextInput
-                  style={styles.input}
-                  value={item.description}
-                  onChangeText={(v) => updateItem(index, 'description', v)}
-                  placeholder="Description"
-                />
+            <View key={index} style={styles.itemCard}>
+              <View style={styles.itemCardHeader}>
+                <Text style={styles.itemCardTitle}>Item {index + 1}</Text>
+                <View style={styles.itemCardActions}>
+                  <TouchableOpacity onPress={() => openInventoryModal(index)} style={[styles.addSmallButton, { marginRight: 8 }]}>
+                    <Text style={styles.addSmallText}>From Inventory</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => removeItem(index)} style={styles.removeButton}>
+                    <Trash2 size={16} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={{ flex: 1, marginHorizontal: 8 }}>
-                <TextInput
-                  style={styles.input}
-                  value={item.quantity}
-                  onChangeText={(v) => updateItem(index, 'quantity', v)}
-                  keyboardType="numeric"
-                  placeholder="Qty"
-                />
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Item Name / Description</Text>
+                <TextInput style={styles.input} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Description" />
               </View>
-              <View style={{ flex: 1.5 }}>
-                <TextInput
-                  style={styles.input}
-                  value={item.unitPrice}
-                  onChangeText={(v) => updateItem(index, 'unitPrice', v)}
-                  keyboardType="numeric"
-                  placeholder="Price"
-                />
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Part No / SKU</Text>
+                <TextInput style={styles.input} value={item.partNo} onChangeText={(v) => updateItem(index, 'partNo', v)} placeholder="SKU" />
               </View>
-              <TouchableOpacity onPress={() => removeItem(index)} style={styles.removeButton}>
-                <Trash2 size={18} color="#EF4444" />
-              </TouchableOpacity>
+
+              <View style={styles.row}>
+                <View style={[styles.inputGroup, { flex: 1.2, marginRight: 8 }]}>
+                  <Text style={styles.label}>Qty</Text>
+                  <TextInput style={[styles.input, styles.compactInput]} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" placeholder="1" />
+                </View>
+                <View style={[styles.inputGroup, { flex: 1.5, marginRight: 8 }]}>
+                  <Text style={styles.label}>Rate</Text>
+                  <TextInput style={[styles.input, styles.compactInput]} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" placeholder="0.00" />
+                </View>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.label}>GST%</Text>
+                  <TextInput style={[styles.input, styles.compactInput]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" placeholder="0" />
+                </View>
+              </View>
+
+
+              <View style={styles.itemSummaryRow}>
+                <View style={styles.itemSummaryBadge}>
+                  <Text style={styles.itemSummaryLabel}>Tax: </Text>
+                  <Text style={styles.itemSummaryValue}>₹{((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0) * ((parseFloat(item.taxRate) || 0) / 100)).toFixed(2)}</Text>
+                </View>
+                <View style={[styles.itemSummaryBadge, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
+                  <Text style={[styles.itemSummaryLabel, { color: '#6366F1' }]}>Total: </Text>
+                  <Text style={[styles.itemSummaryValue, { color: '#6366F1' }]}>₹{((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0) * (1 + (parseFloat(item.taxRate) || 0) / 100)).toFixed(2)}</Text>
+                </View>
+              </View>
             </View>
           ))}
+
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Taxes & Discounts</Text>
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.label}>Tax (%)</Text>
-              <TextInput
-                style={styles.input}
-                value={taxRate}
-                onChangeText={setTaxRate}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Discount (%)</Text>
-              <TextInput
-                style={styles.input}
-                value={discountRate}
-                onChangeText={setDiscountRate}
-                keyboardType="numeric"
-              />
-            </View>
+          <Text style={styles.sectionTitle}>Discounts & Notes</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Global Discount (%)</Text>
+            <TextInput style={styles.input} value={discountRate} onChangeText={setDiscountRate} keyboardType="numeric" />
           </View>
           <View style={styles.inputGroup}>
+
             <Text style={styles.label}>Notes</Text>
             <TextInput
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
@@ -355,6 +400,37 @@ export default function CreateInvoiceScreen() {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select from Inventory</Text>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeModalText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={inventoryList}
+            keyExtractor={i => i.id.toString()}
+            contentContainerStyle={{ padding: 20 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.inventoryItemRow} onPress={() => selectInventoryItem(item)}>
+                <View>
+                  <Text style={styles.inventoryItemName}>{item.name}</Text>
+                  {item.partNo && <Text style={styles.inventoryItemPart}>Part: {item.partNo}</Text>}
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.inventoryItemPrice}>₹{item.price.toFixed(2)}</Text>
+                  <Text style={styles.inventoryItemTax}>+{item.taxRate}% GST</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <Text style={{ textAlign: 'center', marginTop: 50, color: '#9CA3AF' }}>No items in inventory.</Text>
+            }
+          />
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -414,19 +490,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
+  compactInput: {
+    paddingHorizontal: 10, // Reduced padding for numeric fields
+  },
+
   row: {
     flexDirection: 'row',
   },
-  itemRow: {
+  itemCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  itemCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  itemCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  itemCardActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
   },
   removeButton: {
-    padding: 12,
+    padding: 8,
     backgroundColor: '#FEF2F2',
-    borderRadius: 12,
-    marginLeft: 8,
+    borderRadius: 8,
   },
   addSmallButton: {
     flexDirection: 'row',
@@ -441,6 +538,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 6,
     fontSize: 13,
+  },
+  itemSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+  },
+  itemSummaryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  itemSummaryLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  itemSummaryValue: {
+    fontSize: 13,
+    color: '#111827',
+    fontWeight: '700',
   },
   summarySection: {
     backgroundColor: '#FFFFFF',
@@ -522,5 +643,59 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 8,
     fontSize: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    backgroundColor: '#FAFAFA',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  closeModalText: {
+    fontSize: 16,
+    color: '#6366F1',
+    fontWeight: '600',
+  },
+  inventoryItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  inventoryItemName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  inventoryItemPart: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  inventoryItemPrice: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#6366F1',
+  },
+  inventoryItemTax: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
 });

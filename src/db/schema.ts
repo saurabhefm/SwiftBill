@@ -42,17 +42,50 @@ export const invoiceItems = sqliteTable('invoice_items', {
   invoiceId: integer('invoice_id').notNull().references(() => invoices.id, { onDelete: 'cascade' }),
   description: text('description').notNull(),
   partNo: text('part_no'),
+  specifications: text('specifications'),
+  make: text('make'),
+  uom: text('uom'),
   quantity: real('quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull().default(0),
   taxRate: real('tax_rate').notNull().default(0),
   total: real('total').notNull().default(0),
 });
 
+
 export const inventory = sqliteTable('inventory', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   partNo: text('part_no'),
+  specifications: text('specifications'),
+  make: text('make'),
+  uom: text('uom'),
   price: real('price').notNull().default(0),
   taxRate: real('tax_rate').notNull().default(0),
 });
+
+export const boms = sqliteTable('boms', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectName: text('project_name').notNull(),
+  clientId: integer('client_id').references(() => clients.id),
+  date: text('date').notNull(),
+  revision: integer('revision').notNull().default(0),
+  parentId: integer('parent_id'), // To link revisions of the same project
+  totalCost: real('total_cost').notNull().default(0),
+  status: text('status').notNull().default('Draft'),
+});
+
+export const bomItems = sqliteTable('bom_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  bomId: integer('bom_id').notNull().references(() => boms.id, { onDelete: 'cascade' }),
+  description: text('description').notNull(),
+  partNo: text('part_no'),
+  specifications: text('specifications'),
+  make: text('make'),
+  uom: text('uom'),
+  quantity: real('quantity').notNull().default(1),
+  unitPrice: real('unit_price').notNull().default(0),
+  total: real('total').notNull().default(0),
+  remark: text('remark'),
+});
+
 

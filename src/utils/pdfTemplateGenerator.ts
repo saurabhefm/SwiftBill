@@ -19,8 +19,10 @@ interface Client {
 
 interface InvoiceItem {
   description: string;
+  partNo?: string | null;
   quantity: number;
   unitPrice: number;
+  taxRate: number;
   total: number;
 }
 
@@ -48,8 +50,10 @@ export const generateInvoiceHtml = (
   const itemsHtml = items.map(item => `
     <tr>
       <td>${item.description}</td>
+      <td style="font-family: monospace; color: #666;">${item.partNo || '-'}</td>
       <td style="text-align: center;">${item.quantity}</td>
       <td style="text-align: right;">${currencySymbol}${item.unitPrice.toFixed(2)}</td>
+      <td style="text-align: right;">${item.taxRate}%</td>
       <td style="text-align: right;">${currencySymbol}${item.total.toFixed(2)}</td>
     </tr>
   `).join('');
@@ -106,10 +110,12 @@ export const generateInvoiceHtml = (
         <table>
           <thead>
             <tr>
-              <th>Description</th>
+              <th>Item Name</th>
+              <th>Part No</th>
               <th style="text-align: center;">Qty</th>
-              <th style="text-align: right;">Unit Price</th>
-              <th style="text-align: right;">Amount</th>
+              <th style="text-align: right;">Rate</th>
+              <th style="text-align: right;">GST</th>
+              <th style="text-align: right;">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -130,7 +136,7 @@ export const generateInvoiceHtml = (
           ` : ''}
           ${invoice.taxAmount > 0 ? `
             <div class="total-row">
-              <span>Tax (${invoice.taxRate}%)</span>
+              <span>Total Tax</span>
               <span>${currencySymbol}${invoice.taxAmount.toFixed(2)}</span>
             </div>
           ` : ''}

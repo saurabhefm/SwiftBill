@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, View, Text } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, View, Text, Platform } from 'react-native';
 import { db } from '@/src/db/client';
 import { inventory } from '@/src/db/schema';
 import { eq } from 'drizzle-orm';
