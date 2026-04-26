@@ -23,6 +23,7 @@ SplashScreen.preventAutoHideAsync();
 
 import { useState } from 'react';
 import { initDb } from '@/src/db/client';
+import { ThemeProvider as CustomThemeProvider, useTheme } from '@/context/ThemeContext';
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -36,7 +37,6 @@ export default function RootLayout() {
     initDb().then(() => setDbReady(true));
   }, []);
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -51,16 +51,22 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <CustomThemeProvider>
+      <RootLayoutNav />
+    </CustomThemeProvider>
+  );
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { isDark } = useTheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="create-invoice" options={{ title: 'Create Invoice', headerTitleStyle: { fontWeight: '800' } }} />
+        <Stack.Screen name="create-bom" options={{ title: 'Create BOM', headerTitleStyle: { fontWeight: '800' } }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

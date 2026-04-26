@@ -39,8 +39,10 @@ export default function CreateInvoiceScreen() {
   
   // Inventory Modal State
   const [inventoryList, setInventoryList] = useState<any[]>([]);
+  const [inventorySearch, setInventorySearch] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
+
 
   const parsedItems = items.map(item => ({
     quantity: parseFloat(item.quantity) || 0,
@@ -109,6 +111,12 @@ export default function CreateInvoiceScreen() {
       console.error('Error loading invoice:', error);
     }
   };
+
+  const filteredInventory = inventoryList.filter(item => 
+    item.name.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+    (item.partNo && item.partNo.toLowerCase().includes(inventorySearch.toLowerCase()))
+  );
+
 
   const addItem = () => {
     setItems([...items, { description: '', partNo: '', quantity: '1', unitPrice: '0', taxRate: '0' }]);
@@ -276,12 +284,9 @@ export default function CreateInvoiceScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Items</Text>
-            <TouchableOpacity onPress={addItem} style={styles.addSmallButton}>
-              <Plus size={18} color="#2563EB" />
-              <Text style={styles.addSmallText}>Add Item</Text>
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>Items Breakdown</Text>
           </View>
+
 
           {items.map((item, index) => (
             <View key={index} style={styles.itemCard}>
@@ -299,7 +304,13 @@ export default function CreateInvoiceScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Item Name / Description</Text>
-                <TextInput style={styles.input} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Description" />
+                <TextInput 
+                  style={styles.input} 
+                  value={item.description} 
+                  onChangeText={(v) => updateItem(index, 'description', v)} 
+                  placeholder="Description" 
+                  placeholderTextColor="#94a3b8"
+                />
               </View>
 
               <View style={styles.inputGroup}>
@@ -310,15 +321,36 @@ export default function CreateInvoiceScreen() {
               <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1.2, marginRight: 8 }]}>
                   <Text style={styles.label}>Qty</Text>
-                  <TextInput style={[styles.input, styles.compactInput]} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" placeholder="1" />
+                  <TextInput 
+                    style={[styles.input, styles.compactInput]} 
+                    value={item.quantity} 
+                    onChangeText={(v) => updateItem(index, 'quantity', v)} 
+                    keyboardType="numeric" 
+                    placeholder="1" 
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
                 <View style={[styles.inputGroup, { flex: 1.5, marginRight: 8 }]}>
                   <Text style={styles.label}>Rate</Text>
-                  <TextInput style={[styles.input, styles.compactInput]} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" placeholder="0.00" />
+                  <TextInput 
+                    style={[styles.input, styles.compactInput]} 
+                    value={item.unitPrice} 
+                    onChangeText={(v) => updateItem(index, 'unitPrice', v)} 
+                    keyboardType="numeric" 
+                    placeholder="0.00" 
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.label}>GST%</Text>
-                  <TextInput style={[styles.input, styles.compactInput]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" placeholder="0" />
+                  <TextInput 
+                    style={[styles.input, styles.compactInput]} 
+                    value={item.taxRate} 
+                    onChangeText={(v) => updateItem(index, 'taxRate', v)} 
+                    keyboardType="numeric" 
+                    placeholder="0" 
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
               </View>
 
@@ -333,10 +365,16 @@ export default function CreateInvoiceScreen() {
                   <Text style={[styles.itemSummaryValue, { color: '#6366F1' }]}>₹{((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0) * (1 + (parseFloat(item.taxRate) || 0) / 100)).toFixed(2)}</Text>
                 </View>
               </View>
-            </View>
-          ))}
+              </View>
+            ))}
 
+
+          <TouchableOpacity onPress={addItem} style={styles.addItemBottomButton}>
+            <Plus size={20} color="#4F46E5" />
+            <Text style={styles.addItemBottomText}>Add Next Item</Text>
+          </TouchableOpacity>
         </View>
+
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Discounts & Notes</Text>
@@ -409,9 +447,20 @@ export default function CreateInvoiceScreen() {
               <Text style={styles.closeModalText}>Close</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search items by name or part number..."
+              value={inventorySearch}
+              onChangeText={setInventorySearch}
+            />
+          </View>
+
           <FlatList
-            data={inventoryList}
+            data={filteredInventory}
             keyExtractor={i => i.id.toString()}
+
             contentContainerStyle={{ padding: 20 }}
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.inventoryItemRow} onPress={() => selectInventoryItem(item)}>
@@ -698,4 +747,35 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 2,
   },
+  addItemBottomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(79, 70, 229, 0.05)',
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 70, 229, 0.2)',
+    borderStyle: 'dashed',
+    marginTop: 8,
+  },
+  addItemBottomText: {
+    color: '#4F46E5',
+    fontWeight: '700',
+    marginLeft: 8,
+    fontSize: 15,
+  },
+  searchContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  searchInput: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
 });
+

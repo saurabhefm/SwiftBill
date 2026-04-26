@@ -37,7 +37,9 @@ export default function CreateBOMScreen() {
   const [globalTaxRate, setGlobalTaxRate] = useState('0');
   const [projectCapacity, setProjectCapacity] = useState('30');
   const [profitRate, setProfitRate] = useState('0');
+  const [inventorySearch, setInventorySearch] = useState('');
   const [notes, setNotes] = useState('Above Pricing is inclusive of supply of above material & installation but excluding the following:\n1. CCTV Surveillance System charges shall be extra\n2. Project insurance shall be in client scope\n3. Temporary electricity connection during construction period shall be client responsibility\n4. Tax shall be extra as actual\n5. Boundary Fencing shall be in client scope\n6. Local issue shall be takencare by client\n7. Extra material shall be taken by Solveig solar pvt ltd\n8. Full-time service support for a period of 3 months from date of commissioning\n9. Defect liability period is not applicable');
+
 
   const [items, setItems] = useState<BOMItem[]>([{
 
@@ -106,8 +108,6 @@ export default function CreateBOMScreen() {
         if (bom.notes) setNotes(bom.notes);
 
         if (bom.clientId) {
-
-
           const [client] = await db.select().from(clients).where(eq(clients.id, bom.clientId));
           if (client) setClientName(client.name);
         }
@@ -124,10 +124,16 @@ export default function CreateBOMScreen() {
           taxRate: i.taxRate?.toString() || '0',
           remark: i.remark || '',
         })));
-
       }
     } catch (e) { console.error(e); }
   };
+
+  const filteredInventory = inventoryList.filter(item => 
+    item.name.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+    (item.specifications && item.specifications.toLowerCase().includes(inventorySearch.toLowerCase())) ||
+    (item.make && item.make.toLowerCase().includes(inventorySearch.toLowerCase()))
+  );
+
 
   const addItem = () => {
     setItems([...items, { description: '', specifications: '', make: '', uom: '', quantity: '1', unitPrice: '0', taxRate: '0', remark: '' }]);
@@ -283,22 +289,31 @@ export default function CreateBOMScreen() {
           <Text style={styles.sectionTitle}>Project Details</Text>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Project Name</Text>
-            <TextInput style={styles.input} value={projectName} onChangeText={setProjectName} placeholder="e.g. 30 MWp Solar Project" />
+          <TextInput 
+            style={styles.input} 
+            value={projectName} 
+            onChangeText={setProjectName} 
+            placeholder="e.g. 30 MWp Solar Project" 
+            placeholderTextColor="#94a3b8"
+          />
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Client Name</Text>
-            <TextInput style={styles.input} value={clientName} onChangeText={setClientName} placeholder="Enter client name" />
+          <TextInput 
+            style={styles.input} 
+            value={clientName} 
+            onChangeText={setClientName} 
+            placeholder="Enter client name" 
+            placeholderTextColor="#94a3b8"
+          />
           </View>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Bill of Materials</Text>
-            <TouchableOpacity onPress={addItem} style={styles.addSmallButton}>
-              <Plus size={18} color="#059669" />
-              <Text style={styles.addSmallText}>Add Material</Text>
-            </TouchableOpacity>
           </View>
+
 
           {items.map((item, index) => (
             <View key={index} style={styles.itemCard}>
@@ -316,48 +331,107 @@ export default function CreateBOMScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Material Name</Text>
-                <TextInput style={styles.input} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />
+                <TextInput 
+                  style={styles.input} 
+                  value={item.description} 
+                  onChangeText={(v) => updateItem(index, 'description', v)} 
+                  placeholder="Name" 
+                  placeholderTextColor="#94a3b8"
+                />
               </View>
 
               <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                   <Text style={styles.label}>Make</Text>
-                  <TextInput style={styles.input} value={item.make} onChangeText={(v) => updateItem(index, 'make', v)} placeholder="Brand" />
+                  <TextInput 
+                    style={styles.input} 
+                    value={item.make} 
+                    onChangeText={(v) => updateItem(index, 'make', v)} 
+                    placeholder="Brand" 
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.label}>UOM</Text>
-                  <TextInput style={styles.input} value={item.uom} onChangeText={(v) => updateItem(index, 'uom', v)} placeholder="MWp/Nos" />
+                  <TextInput 
+                    style={styles.input} 
+                    value={item.uom} 
+                    onChangeText={(v) => updateItem(index, 'uom', v)} 
+                    placeholder="MWp/Nos" 
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Technical Specification</Text>
-                <TextInput style={[styles.input, { height: 60 }]} value={item.specifications} onChangeText={(v) => updateItem(index, 'specifications', v)} multiline placeholder="Specs" />
+                <TextInput 
+                  style={[styles.input, { height: 60 }]} 
+                  value={item.specifications} 
+                  onChangeText={(v) => updateItem(index, 'specifications', v)} 
+                  multiline 
+                  placeholder="Specs" 
+                  placeholderTextColor="#94a3b8"
+                />
               </View>
 
               <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                   <Text style={styles.label}>Quantity</Text>
-                  <TextInput style={styles.input} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" placeholder="0" />
+                  <TextInput 
+                    style={styles.input} 
+                    value={item.quantity} 
+                    onChangeText={(v) => updateItem(index, 'quantity', v)} 
+                    keyboardType="numeric" 
+                    placeholder="0" 
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                   <Text style={styles.label}>Unit Price</Text>
-                  <TextInput style={styles.input} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" placeholder="0.00" />
+                  <TextInput 
+                    style={styles.input} 
+                    value={item.unitPrice} 
+                    onChangeText={(v) => updateItem(index, 'unitPrice', v)} 
+                    keyboardType="numeric" 
+                    placeholder="0.00" 
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.label}>GST (%)</Text>
-                  <TextInput style={styles.input} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" placeholder="0" />
+                  <TextInput 
+                    style={styles.input} 
+                    value={item.taxRate} 
+                    onChangeText={(v) => updateItem(index, 'taxRate', v)} 
+                    keyboardType="numeric" 
+                    placeholder="0" 
+                    placeholderTextColor="#94a3b8"
+                  />
                 </View>
               </View>
 
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Remark</Text>
-                <TextInput style={styles.input} value={item.remark} onChangeText={(v) => updateItem(index, 'remark', v)} placeholder="Additional notes..." />
+                <TextInput 
+                  style={styles.input} 
+                  value={item.remark} 
+                  onChangeText={(v) => updateItem(index, 'remark', v)} 
+                  placeholder="Additional notes..." 
+                  placeholderTextColor="#94a3b8"
+                />
               </View>
-            </View>
-          ))}
+              </View>
+            ))}
+
+
+          <TouchableOpacity onPress={addItem} style={styles.addItemBottomButton}>
+            <Plus size={20} color="#059669" />
+            <Text style={styles.addItemBottomText}>Add Next Material</Text>
+          </TouchableOpacity>
         </View>
+
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Global Costing & Profit</Text>
@@ -450,9 +524,25 @@ export default function CreateBOMScreen() {
             <Text style={styles.modalTitle}>Materials Inventory</Text>
             <TouchableOpacity onPress={() => setModalVisible(false)}><Text style={styles.closeModalText}>Close</Text></TouchableOpacity>
           </View>
+          
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name, spec or make..."
+              value={inventorySearch}
+              onChangeText={setInventorySearch}
+            />
+            {inventorySearch !== '' && (
+              <TouchableOpacity onPress={() => setInventorySearch('')} style={styles.clearSearch}>
+                <Text style={styles.clearSearchText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           <FlatList
-            data={inventoryList}
+            data={filteredInventory}
             keyExtractor={i => i.id.toString()}
+
             contentContainerStyle={{ padding: 20 }}
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.inventoryItemRow} onPress={() => selectInventoryItem(item)}>
@@ -513,4 +603,45 @@ const styles = StyleSheet.create({
   inventoryItemName: { fontSize: 16, fontWeight: '700' },
   inventoryItemSpecs: { fontSize: 12, color: '#6B7280' },
   inventoryItemPrice: { fontSize: 16, fontWeight: '800', color: '#10B981' },
+  addItemBottomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+    borderStyle: 'dashed',
+    marginTop: 8,
+  },
+  addItemBottomText: {
+    color: '#059669',
+    fontWeight: '700',
+    marginLeft: 8,
+    fontSize: 15,
+  },
+  searchContainer: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  clearSearch: {
+    marginLeft: 12,
+  },
+  clearSearchText: {
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
 });
+
