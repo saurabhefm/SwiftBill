@@ -35,7 +35,12 @@ export default function CreateBOMScreen() {
   const [date, setDate] = useState(new Date().toISOString());
   const [revision, setRevision] = useState(0);
   const [globalTaxRate, setGlobalTaxRate] = useState('0');
+  const [projectCapacity, setProjectCapacity] = useState('30');
+  const [profitRate, setProfitRate] = useState('0');
+  const [notes, setNotes] = useState('Above Pricing is inclusive of supply of above material & installation but excluding the following:\n1. CCTV Surveillance System charges shall be extra\n2. Project insurance shall be in client scope\n3. Temporary electricity connection during construction period shall be client responsibility\n4. Tax shall be extra as actual\n5. Boundary Fencing shall be in client scope\n6. Local issue shall be takencare by client\n7. Extra material shall be taken by Solveig solar pvt ltd\n8. Full-time service support for a period of 3 months from date of commissioning\n9. Defect liability period is not applicable');
+
   const [items, setItems] = useState<BOMItem[]>([{
+
     description: '', specifications: '', make: '', uom: '', quantity: '1', unitPrice: '0', taxRate: '0', remark: ''
   }]);
 
@@ -66,7 +71,16 @@ export default function CreateBOMScreen() {
 
   const globalTaxAmount = (globalTaxBasis * (parseFloat(globalTaxRate) || 0)) / 100;
   const totalTax = itemTaxes + globalTaxAmount;
-  const totalCost = subtotal + totalTax;
+  const totalProjectCost = subtotal + totalTax;
+  
+  const profitAmount = (totalProjectCost * (parseFloat(profitRate) || 0)) / 100;
+  const totalBasicCost = totalProjectCost + profitAmount;
+  
+  const capacityInWp = (parseFloat(projectCapacity) || 1) * 1000000;
+  const costPerWp = totalProjectCost / capacityInWp;
+  const profitPerWp = profitAmount / capacityInWp;
+  const basicCostPerWp = totalBasicCost / capacityInWp;
+
 
 
   useEffect(() => {
@@ -87,7 +101,12 @@ export default function CreateBOMScreen() {
         setProjectName(bom.projectName);
         setRevision(bom.revision);
         setGlobalTaxRate(bom.globalTaxRate?.toString() || '0');
+        setProjectCapacity(bom.projectCapacity?.toString() || '30');
+        setProfitRate(bom.profitRate?.toString() || '0');
+        if (bom.notes) setNotes(bom.notes);
+
         if (bom.clientId) {
+
 
           const [client] = await db.select().from(clients).where(eq(clients.id, bom.clientId));
           if (client) setClientName(client.name);
@@ -169,10 +188,15 @@ export default function CreateBOMScreen() {
         revision: isNewRevision ? revision + 1 : revision,
         globalTaxRate: parseFloat(globalTaxRate) || 0,
         globalTaxAmount,
-        totalCost,
+        projectCapacity: parseFloat(projectCapacity) || 30,
+        profitRate: parseFloat(profitRate) || 0,
+        totalCost: totalProjectCost,
+        notes,
         status: 'Draft',
+
         parentId: isEditing ? (isNewRevision ? parseInt(id as string) : undefined) : undefined
       };
+
 
 
       let finalBomId: number;
@@ -213,8 +237,22 @@ export default function CreateBOMScreen() {
 
       const html = generateBOMHtml(
         profile,
-        { projectName, revision, date, totalCost, globalTaxRate: parseFloat(globalTaxRate) || 0, globalTaxAmount, subtotal },
+        { 
+          projectName, 
+          revision, 
+          date, 
+          totalCost: totalProjectCost, 
+          globalTaxRate: parseFloat(globalTaxRate) || 0, 
+          globalTaxAmount, 
+          subtotal, 
+          notes,
+          projectCapacity: parseFloat(projectCapacity) || 30,
+          profitRate: parseFloat(profitRate) || 0,
+          totalBasicCost
+        },
         items.map(i => ({
+
+
           description: i.description,
           specifications: i.specifications,
           make: i.make,
@@ -322,25 +360,64 @@ export default function CreateBOMScreen() {
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Global Costing & Tax</Text>
+          <Text style={styles.sectionTitle}>Global Costing & Profit</Text>
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+              <Text style={styles.label}>Capacity (MWp)</Text>
+              <TextInput style={styles.input} value={projectCapacity} onChangeText={setProjectCapacity} keyboardType="numeric" placeholder="30" />
+            </View>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.label}>Profit (%)</Text>
+              <TextInput style={styles.input} value={profitRate} onChangeText={setProfitRate} keyboardType="numeric" placeholder="0" />
+            </View>
+          </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Global GST (%) - Applied if item GST is 0</Text>
             <TextInput style={styles.input} value={globalTaxRate} onChangeText={setGlobalTaxRate} keyboardType="numeric" placeholder="0" />
           </View>
         </View>
 
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notes & Exclusions</Text>
+          <TextInput 
+            style={[styles.input, { height: 150, textAlignVertical: 'top', marginTop: 10 }]} 
+            value={notes} 
+            onChangeText={setNotes} 
+            multiline 
+            placeholder="Terms, conditions, or exclusions..." 
+          />
+        </View>
+
         <View style={styles.summarySection}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryLabel}>Solar Project Cost</Text>
             <Text style={styles.summaryText}>₹{subtotal.toLocaleString()}</Text>
           </View>
+
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total GST</Text>
             <Text style={styles.summaryText}>₹{totalTax.toLocaleString()}</Text>
           </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Cost / Wp</Text>
+            <Text style={styles.summaryText}>₹{costPerWp.toFixed(4)}</Text>
+          </View>
+          
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Profit / Wp (@{profitRate}%)</Text>
+            <Text style={styles.summaryText}>₹{profitPerWp.toFixed(4)}</Text>
+          </View>
+
+          <View style={[styles.summaryRow, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)', paddingTop: 8, marginTop: 4 }]}>
+            <Text style={[styles.summaryLabel, { color: '#10B981' }]}>Total Basic Cost / Wp</Text>
+            <Text style={[styles.summaryText, { color: '#10B981' }]}>₹{basicCostPerWp.toFixed(4)}</Text>
+          </View>
+
           <Text style={[styles.summaryLabel, { marginTop: 16, color: 'rgba(255,255,255,0.6)' }]}>Final Estimated Project Cost</Text>
-          <Text style={styles.summaryValue}>₹{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+          <Text style={styles.summaryValue}>₹{totalBasicCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
         </View>
+
 
       </ScrollView>
 
