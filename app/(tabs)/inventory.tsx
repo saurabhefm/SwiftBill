@@ -3,10 +3,12 @@ import { StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, View, Text, P
 import { getDb } from '@/src/db/client';
 import { inventory } from '@/src/db/schema';
 import { eq } from 'drizzle-orm';
-import { Plus, Trash2, Edit2 } from 'lucide-react-native';
+import { Plus, Trash2, Edit2, FileSpreadsheet } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import * as DocumentPicker from 'expo-document-picker';
+import { parseInventoryExcel } from '@/src/utils/excelParser';
 
 interface InventoryItem {
   id: number;
@@ -79,6 +81,50 @@ export default function InventoryScreen() {
     } catch (error) {
       console.error('Error saving item:', error);
       Alert.alert('Error', 'Failed to save item');
+    }
+  };
+
+  const handleImportExcel = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+          'text/csv'
+        ],
+      });
+
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+      const rows = await parseInventoryExcel(file.uri);
+
+      if (rows.length === 0) {
+        Alert.alert('No Data', 'The selected file is empty or formatted incorrectly.');
+        return;
+      }
+
+      const db = getDb();
+      if (!db) return;
+
+      // Batch insert
+      for (const row of rows) {
+        await db.insert(inventory).values({
+          name: row.name!,
+          partNo: row.partNo || null,
+          specifications: row.specifications || null,
+          make: row.make || null,
+          uom: row.uom || null,
+          price: Number(row.price) || 0,
+          taxRate: Number(row.taxRate) || 0,
+        });
+      }
+
+      Alert.alert('Success', `Imported ${rows.length} items successfully!`);
+      fetchInventory();
+    } catch (error) {
+      console.error('Import Error:', error);
+      Alert.alert('Import Failed', 'An error occurred while importing the file.');
     }
   };
 
@@ -182,9 +228,14 @@ export default function InventoryScreen() {
           <Text style={styles.gradientTitle}>Inventory</Text>
           <Text style={styles.subtitle}>Manage products & services</Text>
         </View>
-        <TouchableOpacity style={styles.addButton} onPress={() => openEditor()} activeOpacity={0.8}>
-          <Plus color="#6366F1" size={24} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={[styles.addButton, { marginRight: 12 }]} onPress={handleImportExcel} activeOpacity={0.8}>
+            <FileSpreadsheet color="#6366F1" size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton} onPress={() => openEditor()} activeOpacity={0.8}>
+            <Plus color="#6366F1" size={24} />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       <FlatList
@@ -256,6 +307,10 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     marginTop: 4,
     fontWeight: '500',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   addButton: {
     backgroundColor: '#FFFFFF',
