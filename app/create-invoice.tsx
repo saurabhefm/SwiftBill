@@ -134,7 +134,7 @@ export default function CreateInvoiceScreen() {
     }
   };
 
-  const updateItem = (index: number, field: keyof Item, value: string) => {
+  const updateItem = (index: number, field: string, value: string) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
@@ -142,10 +142,20 @@ export default function CreateInvoiceScreen() {
 
   const selectInventoryItem = (invItem: any) => {
     if (activeItemIndex !== null) {
-      updateItem(activeItemIndex, 'description', invItem.name);
-      updateItem(activeItemIndex, 'partNo', invItem.partNo || '');
-      updateItem(activeItemIndex, 'unitPrice', invItem.price.toString());
-      updateItem(activeItemIndex, 'taxRate', invItem.taxRate.toString());
+      setItems(currentItems => {
+        const newItems = [...currentItems];
+        newItems[activeItemIndex] = {
+          ...newItems[activeItemIndex],
+          description: invItem.name,
+          partNo: invItem.partNo || '',
+          specifications: invItem.specifications || '',
+          make: invItem.make || '',
+          uom: invItem.uom || '',
+          unitPrice: invItem.price.toString(),
+          taxRate: invItem.taxRate.toString(),
+        };
+        return newItems;
+      });
     }
     setModalVisible(false);
   };
@@ -218,6 +228,9 @@ export default function CreateInvoiceScreen() {
         invoiceId: finalInvoiceId,
         description: item.description || 'No Description',
         partNo: item.partNo || null,
+        specifications: item.specifications || null,
+        make: item.make || null,
+        uom: item.uom || null,
         quantity: parseFloat(item.quantity) || 0,
         unitPrice: parseFloat(item.unitPrice) || 0,
         taxRate: parseFloat(item.taxRate) || 0,
@@ -228,9 +241,9 @@ export default function CreateInvoiceScreen() {
 
       Alert.alert('Success', `Invoice ${isEditing ? 'updated' : 'created'} successfully!`);
       router.back();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving invoice:', error);
-      Alert.alert('Error', 'Failed to save invoice. Please ensure all fields are filled correctly.');
+      Alert.alert('Error', 'Failed to save invoice: ' + (error.message || 'Unknown error'));
     }
   };
 

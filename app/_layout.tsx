@@ -16,18 +16,29 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function startApp() {
+      // Safety timeout: If DB doesn't respond in 5s, force open
+      const timeout = setTimeout(() => {
+        if (!dbReady) {
+          console.warn('App: DB Init timed out, forcing open');
+          setDbReady(true);
+          SplashScreen.hideAsync().catch(() => {});
+        }
+      }, 5000);
+
       try {
         console.log('App: Start');
         await initDb((msg, p) => {
           setStatus(msg);
           setProgress(40 + (p * 0.6));
         });
+        clearTimeout(timeout);
         setDbReady(true);
         setTimeout(async () => {
           await SplashScreen.hideAsync().catch(() => {});
         }, 800);
       } catch (e: any) {
         console.error('App Init Error:', e);
+        clearTimeout(timeout);
         setDbReady(true);
       }
     }
