@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import * as FileSystem from 'expo-file-system';
 
 export interface ExcelInventoryRow {
@@ -13,6 +12,9 @@ export interface ExcelInventoryRow {
 
 export const parseInventoryExcel = async (fileUri: string): Promise<ExcelInventoryRow[]> => {
   try {
+    // DYNAMIC IMPORT: Only load the heavy XLSX library when needed
+    const XLSX = await import('xlsx');
+    
     // Read the file as base64
     const fileBase64 = await FileSystem.readAsStringAsync(fileUri, {
       encoding: FileSystem.EncodingType.Base64,
@@ -28,13 +30,10 @@ export const parseInventoryExcel = async (fileUri: string): Promise<ExcelInvento
 
     // Map columns dynamically and skip empty rows
     return data.map(row => {
-      // Create a normalized row with fuzzy matching for column headers
       const normalized: ExcelInventoryRow = {};
-      
       Object.keys(row).forEach(key => {
         const value = row[key];
         if (value === undefined || value === null) return;
-
         const lowerKey = key.toLowerCase().trim();
         
         if (lowerKey.includes('name') || lowerKey === 'item' || lowerKey === 'description') {
@@ -53,11 +52,10 @@ export const parseInventoryExcel = async (fileUri: string): Promise<ExcelInvento
           normalized.taxRate = value;
         }
       });
-
       return normalized;
-    }).filter(row => row.name); // Only keep rows that at least have a name
+    }).filter(row => row.name);
   } catch (error) {
     console.error('Excel Parse Error:', error);
-    throw new Error('Failed to parse Excel file. Please ensure it is a valid .xlsx or .csv file.');
+    throw new Error('Failed to parse Excel file.');
   }
 };
