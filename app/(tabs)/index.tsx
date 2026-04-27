@@ -1,18 +1,20 @@
 import React, { useState, useCallback } from 'react';
 import { StyleSheet, FlatList, TouchableOpacity, RefreshControl, View, Text } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
-import { db } from '@/src/db/client';
+import { getDb } from '@/src/db/client';
 import { invoices, clients, businessProfile } from '@/src/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { InvoiceCard } from '@/src/components/InvoiceCard';
-import { Plus } from 'lucide-react-native';
+import { Moon, Sun, Plus } from 'lucide-react-native';
 import { InvoiceStatus } from '@/src/components/StatusBadge';
+import { useTheme } from '../../context/ThemeContext';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function DashboardScreen() {
+  const { isDark, toggleTheme } = useTheme();
   const [invoiceList, setInvoiceList] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [currency, setCurrency] = useState('₹');
@@ -20,8 +22,14 @@ export default function DashboardScreen() {
 
   const fetchInvoices = async () => {
     try {
-      const profile = await db.query.businessProfile.findFirst();
-      if (profile) setCurrency(profile.currency || '₹');
+      const db = getDb();
+      if (!db) return;
+
+      // Use standard select for stability
+      const profileResults = await db.select().from(businessProfile).limit(1);
+      if (profileResults.length > 0) {
+        setCurrency(profileResults[0].currency || '₹');
+      }
 
       const results = await db.select({
         id: invoices.id,
@@ -36,7 +44,7 @@ export default function DashboardScreen() {
       .orderBy(desc(invoices.date));
 
       setInvoiceList(results);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching invoices:', error);
     }
   };
@@ -54,9 +62,9 @@ export default function DashboardScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#FAFAFA' }]}>
       <LinearGradient
-        colors={['#4F46E5', '#7C3AED']}
+        colors={isDark ? ['#1F2937', '#111827'] : ['#4F46E5', '#7C3AED']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 20 }]}
@@ -65,13 +73,24 @@ export default function DashboardScreen() {
           <Text style={styles.greeting}>SwiftBill</Text>
           <Text style={styles.subtitle}>Manage your invoices</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.addButton} 
-          onPress={() => router.push('/create-invoice')}
-          activeOpacity={0.8}
-        >
-          <Plus color="#6366F1" size={24} />
-        </TouchableOpacity>
+        
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={[styles.headerIconButton, { marginRight: 12 }]} 
+            onPress={toggleTheme}
+            activeOpacity={0.8}
+          >
+            {isDark ? <Sun color="#FFF" size={20} /> : <Moon color="#FFF" size={20} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.addButton} 
+            onPress={() => router.push('/create-invoice')}
+            activeOpacity={0.8}
+          >
+            <Plus color={isDark ? '#FFF' : '#6366F1'} size={24} />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       <FlatList
@@ -121,13 +140,20 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  headerTextContainer: {
-    flex: 1,
+  headerTextContainer: { flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   greeting: {
-    fontSize: 34,
+    fontSize: 24,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#FFF',
     letterSpacing: -0.5,
   },
   subtitle: {

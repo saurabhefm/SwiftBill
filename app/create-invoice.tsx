@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Platform, View, Text, Modal, FlatList } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { db } from '@/src/db/client';
-import { invoices, invoiceItems, clients, inventory } from '@/src/db/schema';
+import { getDb } from '@/src/db/client';
+import { invoices, invoiceItems, clients, inventory, businessProfile } from '@/src/db/schema';
 import { eq } from 'drizzle-orm';
 import { useInvoiceNumber } from '@/src/hooks/useInvoiceNumber';
 import { useInvoiceCalculator } from '@/src/hooks/useInvoiceCalculator';
@@ -71,6 +71,8 @@ export default function CreateInvoiceScreen() {
 
   const loadInventory = async () => {
     try {
+      const db = getDb();
+      if (!db) return;
       const results = await db.select().from(inventory);
       setInventoryList(results);
     } catch (error) {
@@ -81,6 +83,8 @@ export default function CreateInvoiceScreen() {
 
   const loadInvoice = async () => {
     try {
+      const db = getDb();
+      if (!db) return;
       const invId = parseInt(id as string);
       const [inv] = await db.select().from(invoices).where(eq(invoices.id, invId));
         if (inv) {
@@ -157,44 +161,59 @@ export default function CreateInvoiceScreen() {
       return;
     }
 
+    const db = getDb();
+    if (!db) {
+      Alert.alert('Error', 'Database not ready');
+      return;
+    }
+
     try {
-      // 1. Ensure client exists or create
-      let clientId: number;
-      const [existingClient] = await db.select().from(clients).where(eq(clients.name, clientName));
-      if (existingClient) {
-        clientId = existingClient.id;
+      const db = getDb();
+      if (!db) return;
+
+      // 1. Find or create client
+      let finalClientId: number;
+      const results = await db.select().from(clients).where(eq(clients.name, clientName)).limit(1);
+      
+      if (results.length > 0) {
+        finalClientId = results[0].id;
       } else {
-        const [newClient] = await db.insert(clients).values({ name: clientName }).returning({ id: clients.id });
-        clientId = newClient.id;
+        const [newClient] = await db.insert(clients).values({
+          name: clientName,
+        }).returning({ id: clients.id });
+        finalClientId = newClient.id;
       }
 
-      const invoiceData = {
+      // 2. Prepare invoice data
+      const invoiceData: any = {
         invoiceNumber,
+        clientId: finalClientId,
         date,
-        clientId,
         subtotal,
-        taxRate: 0, // Global tax is now 0
+        taxRate: 0,
         taxAmount,
         discountRate: parseFloat(discountRate) || 0,
         discountAmount,
         total,
         notes,
-        status: isEditing ? undefined : 'Draft',
       };
+
+      if (!isEditing) {
+        invoiceData.status = 'Draft';
+      }
 
       let finalInvoiceId: number;
 
       if (isEditing) {
         finalInvoiceId = parseInt(id as string);
         await db.update(invoices).set(invoiceData).where(eq(invoices.id, finalInvoiceId));
-        // Delete and re-insert items for simplicity
         await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, finalInvoiceId));
       } else {
-        const [newInvoice] = await db.insert(invoices).values(invoiceData as any).returning({ id: invoices.id });
+        const [newInvoice] = await db.insert(invoices).values(invoiceData).returning({ id: invoices.id });
         finalInvoiceId = newInvoice.id;
       }
 
-      // 2. Insert items
+      // 3. Insert items
       const itemsToInsert = items.map(item => ({
         invoiceId: finalInvoiceId,
         description: item.description || 'No Description',
@@ -211,14 +230,20 @@ export default function CreateInvoiceScreen() {
       router.back();
     } catch (error) {
       console.error('Error saving invoice:', error);
-      Alert.alert('Error', 'Failed to save invoice');
+      Alert.alert('Error', 'Failed to save invoice. Please ensure all fields are filled correctly.');
     }
   };
 
   const handleShare = async () => {
     try {
-      const profile = await db.query.businessProfile.findFirst();
-      if (!profile) return;
+      const db = getDb();
+      // Use standard select instead of .query for stability
+      const results = await db.select().from(businessProfile).limit(1);
+      const profile = results[0];
+      if (!profile) {
+        Alert.alert('Error', 'Please set up your Business Profile first');
+        return;
+      }
 
       const html = generateInvoiceHtml(
         profile,
@@ -246,9 +271,9 @@ export default function CreateInvoiceScreen() {
 
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sharing invoice:', error);
-      Alert.alert('Error', 'Failed to generate PDF');
+      Alert.alert('Error', 'Failed to generate PDF: ' + error.message);
     }
   };
 

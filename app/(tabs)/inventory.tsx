@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, View, Text, Platform } from 'react-native';
-import { db } from '@/src/db/client';
+import { StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, View, Text, Platform, ScrollView } from 'react-native';
+import { getDb } from '@/src/db/client';
 import { inventory } from '@/src/db/schema';
 import { eq } from 'drizzle-orm';
 import { Plus, Trash2, Edit2 } from 'lucide-react-native';
@@ -30,6 +30,8 @@ export default function InventoryScreen() {
 
 
   const fetchInventory = async () => {
+    const db = getDb();
+    if (!db) return;
     try {
       const results = await db.select().from(inventory);
       setItems(results as InventoryItem[]);
@@ -50,6 +52,8 @@ export default function InventoryScreen() {
       return;
     }
 
+    const db = getDb();
+    if (!db) return;
     try {
       const itemData = {
         name: currentItem.name,
@@ -108,22 +112,25 @@ export default function InventoryScreen() {
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 10 }]}>
           <Text style={styles.title}>{currentItem.id ? 'Edit Item' : 'New Item'}</Text>
         </View>
-        <View style={styles.formContainer}>
+        <ScrollView 
+          contentContainerStyle={{ padding: 24, paddingBottom: 250 }}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Item Name</Text>
-            <TextInput style={styles.input} value={currentItem.name} onChangeText={(v) => setCurrentItem({...currentItem, name: v})} placeholder="e.g. Graphic Design Services" />
+            <TextInput style={styles.input} value={currentItem.name} onChangeText={(v) => setCurrentItem({...currentItem, name: v})} placeholder="e.g. Graphic Design Services" placeholderTextColor="#94a3b8" />
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Part / SKU No</Text>
-            <TextInput style={styles.input} value={currentItem.partNo || ''} onChangeText={(v) => setCurrentItem({...currentItem, partNo: v})} placeholder="e.g. SV-001" />
+            <TextInput style={styles.input} value={currentItem.partNo || ''} onChangeText={(v) => setCurrentItem({...currentItem, partNo: v})} placeholder="e.g. SV-001" placeholderTextColor="#94a3b8" />
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Make / Brand</Text>
-            <TextInput style={styles.input} value={currentItem.make || ''} onChangeText={(v) => setCurrentItem({...currentItem, make: v})} placeholder="e.g. Tata / ABB / Schneider" />
+            <TextInput style={styles.input} value={currentItem.make || ''} onChangeText={(v) => setCurrentItem({...currentItem, make: v})} placeholder="e.g. Tata / ABB / Schneider" placeholderTextColor="#94a3b8" />
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>UOM (Unit of Measure)</Text>
-            <TextInput style={styles.input} value={currentItem.uom || ''} onChangeText={(v) => setCurrentItem({...currentItem, uom: v})} placeholder="e.g. MWp / Nos / Mtrs" />
+            <TextInput style={styles.input} value={currentItem.uom || ''} onChangeText={(v) => setCurrentItem({...currentItem, uom: v})} placeholder="e.g. MWp / Nos / Mtrs" placeholderTextColor="#94a3b8" />
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Technical Specifications</Text>
@@ -133,17 +140,18 @@ export default function InventoryScreen() {
               onChangeText={(v) => setCurrentItem({...currentItem, specifications: v})} 
               multiline 
               placeholder="Detailed technical specs..." 
+              placeholderTextColor="#94a3b8"
             />
           </View>
 
           <View style={styles.row}>
             <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
               <Text style={styles.label}>Default Price</Text>
-              <TextInput style={styles.input} value={currentItem.price?.toString()} onChangeText={(v) => setCurrentItem({...currentItem, price: Number(v) || 0})} keyboardType="numeric" placeholder="0.00" />
+              <TextInput style={styles.input} value={currentItem.price?.toString()} onChangeText={(v) => setCurrentItem({...currentItem, price: Number(v) || 0})} keyboardType="numeric" placeholder="0.00" placeholderTextColor="#94a3b8" />
             </View>
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>GST (%)</Text>
-              <TextInput style={styles.input} value={currentItem.taxRate?.toString()} onChangeText={(v) => setCurrentItem({...currentItem, taxRate: Number(v) || 0})} keyboardType="numeric" placeholder="0" />
+              <TextInput style={styles.input} value={currentItem.taxRate?.toString()} onChangeText={(v) => setCurrentItem({...currentItem, taxRate: Number(v) || 0})} keyboardType="numeric" placeholder="0" placeholderTextColor="#94a3b8" />
             </View>
           </View>
           
@@ -157,7 +165,7 @@ export default function InventoryScreen() {
               </LinearGradient>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </View>
     );
   }

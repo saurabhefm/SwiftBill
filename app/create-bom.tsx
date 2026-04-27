@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Platform, View, Text, Modal, FlatList, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { db } from '@/src/db/client';
-import { boms, bomItems, clients, inventory } from '@/src/db/schema';
+import { getDb } from '@/src/db/client';
+import { boms, bomItems, clients, inventory, businessProfile } from '@/src/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { Trash2, Plus, Save, Share2, History, ChevronDown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { generateBOMHtml } from '@/src/utils/bomTemplateGenerator';
-import { businessProfile } from '@/src/db/schema';
 
 interface BOMItem {
   id?: number;
@@ -91,12 +90,16 @@ export default function CreateBOMScreen() {
   }, [id]);
 
   const loadInventory = async () => {
+    const db = getDb();
+    if (!db) return;
     const results = await db.select().from(inventory);
     setInventoryList(results);
   };
 
   const loadBOM = async () => {
     try {
+      const db = getDb();
+      if (!db) return;
       const bomId = parseInt(id as string);
       const [bom] = await db.select().from(boms).where(eq(boms.id, bomId));
       if (bom) {
@@ -176,6 +179,9 @@ export default function CreateBOMScreen() {
   const handleSave = async (isNewRevision = false) => {
     if (!projectName) return Alert.alert('Error', 'Project Name is required');
 
+    const db = getDb();
+    if (!db) return Alert.alert('Error', 'Database not ready');
+
     try {
       let clientId: number | null = null;
       if (clientName) {
@@ -238,8 +244,15 @@ export default function CreateBOMScreen() {
 
   const handleShare = async () => {
     try {
-      const profile = await db.query.businessProfile.findFirst();
-      if (!profile) return;
+      const db = getDb();
+      if (!db) return;
+
+      const results = await db.select().from(businessProfile).limit(1);
+      const profile = results[0];
+      if (!profile) {
+        Alert.alert('Error', 'Please set up your Business Profile first in Settings');
+        return;
+      }
 
       const html = generateBOMHtml(
         profile,
@@ -257,8 +270,6 @@ export default function CreateBOMScreen() {
           totalBasicCost
         },
         items.map(i => ({
-
-
           description: i.description,
           specifications: i.specifications,
           make: i.make,
@@ -271,12 +282,11 @@ export default function CreateBOMScreen() {
         }))
       );
 
-
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      Alert.alert('Error', 'Failed to generate PDF');
+      Alert.alert('Error', 'Failed to generate BOM PDF: ' + e.message);
     }
   };
 
@@ -497,17 +507,13 @@ export default function CreateBOMScreen() {
 
       <SafeAreaView edges={['bottom']} style={styles.bottomBarContainer}>
         <View style={styles.bottomBar}>
-          {isEditing && (
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleShare}>
-              <Share2 size={20} color="#374151" />
-            </TouchableOpacity>
-          )}
-          {isEditing && (
-            <TouchableOpacity style={[styles.actionButton, styles.revisionButton, { marginHorizontal: 8 }]} onPress={() => handleSave(true)}>
-              <History size={20} color="#059669" />
-              <Text style={styles.revisionButtonText}>New Rev</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={[styles.secondaryButton, { marginRight: 12 }]} 
+            onPress={handleShare}
+          >
+            <Share2 color="#374151" size={24} />
+          </TouchableOpacity>
+
           <TouchableOpacity activeOpacity={0.8} style={{ flex: 1 }} onPress={() => handleSave(false)}>
             <LinearGradient colors={['#059669', '#10B981']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.actionButton, styles.primaryButtonGradient]}>
               <Save size={20} color="#FFF" />

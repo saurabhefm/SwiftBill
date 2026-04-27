@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { StyleSheet, FlatList, TouchableOpacity, View, Text, Alert } from 'react-native';
-import { db } from '@/src/db/client';
-import { boms, clients } from '@/src/db/schema';
+import { getDb } from '@/src/db/client';
+import { boms, clients, businessProfile } from '@/src/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { Plus, ChevronRight, History, Trash2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,8 @@ export default function BOMListScreen() {
 
   const fetchBOMs = async () => {
     try {
+      const db = getDb();
+      if (!db) return;
       // Fetch all BOMs, ordered by date and revision
       const results = await db.select({
         id: boms.id,

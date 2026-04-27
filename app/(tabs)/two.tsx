@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image, View, Text } from 'react-native';
-import { db } from '@/src/db/client';
+import { getDb } from '@/src/db/client';
 import { businessProfile } from '@/src/db/schema';
 import { eq } from 'drizzle-orm';
-import { Save, User, Building, Landmark, Image as ImageIcon } from 'lucide-react-native';
+import { Save, Building, Landmark, Image as ImageIcon, Settings as SettingsIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -29,7 +28,10 @@ export default function SettingsScreen() {
 
   const loadProfile = async () => {
     try {
-      const result = await db.query.businessProfile.findFirst();
+      const db = getDb();
+      if (!db) return;
+      const results = await db.select().from(businessProfile).limit(1);
+      const result = results[0];
       if (result) {
         setProfile({
           name: result.name || '',
@@ -50,14 +52,26 @@ export default function SettingsScreen() {
 
   const handleSave = async () => {
     try {
-      await db.update(businessProfile)
-        .set(profile)
-        .where(eq(businessProfile.id, 1));
+      const db = getDb();
+      if (!db) return;
       
-      Alert.alert('Success', 'Profile updated successfully!');
-    } catch (error) {
+      const existing = await db.select().from(businessProfile).limit(1);
+      
+      if (existing.length > 0) {
+        // Update the one we found
+        await db.update(businessProfile)
+          .set(profile)
+          .where(eq(businessProfile.id, existing[0].id));
+      } else {
+        // Create new
+        await db.insert(businessProfile).values(profile);
+      }
+      
+      Alert.alert('Success', 'Business Profile updated successfully!');
+      loadProfile();
+    } catch (error: any) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Failed to save profile');
+      Alert.alert('Error', 'Failed to save profile: ' + error.message);
     }
   };
 
@@ -104,6 +118,7 @@ export default function SettingsScreen() {
               style={styles.input}
               value={profile.name}
               onChangeText={(v) => setProfile({ ...profile, name: v })}
+              placeholder="Your Business Name"
             />
           </View>
           <View style={styles.inputGroup}>
@@ -113,6 +128,7 @@ export default function SettingsScreen() {
               value={profile.address}
               onChangeText={(v) => setProfile({ ...profile, address: v })}
               multiline
+              placeholder="Business Address"
             />
           </View>
           <View style={styles.row}>
@@ -148,6 +164,7 @@ export default function SettingsScreen() {
               style={styles.input}
               value={profile.bankName}
               onChangeText={(v) => setProfile({ ...profile, bankName: v })}
+              placeholder="e.g. HDFC Bank"
             />
           </View>
           <View style={styles.inputGroup}>
@@ -156,6 +173,7 @@ export default function SettingsScreen() {
               style={styles.input}
               value={profile.bankAccount}
               onChangeText={(v) => setProfile({ ...profile, bankAccount: v })}
+              placeholder="A/C: 00000... IFSC: ..."
             />
           </View>
         </View>
@@ -201,121 +219,22 @@ export default function SettingsScreen() {
   );
 }
 
-// Reuse styles or similar theme
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(229, 231, 235, 0.5)',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(229, 231, 235, 0.5)',
-    shadowColor: '#6366F1',
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-    marginLeft: 10,
-    letterSpacing: -0.3,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  input: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  logoPicker: {
-    alignSelf: 'center',
-    marginBottom: 24,
-  },
-  logoPlaceholder: {
-    width: 140,
-    height: 90,
-    borderRadius: 16,
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-    borderWidth: 2,
-    borderColor: 'rgba(99, 102, 241, 0.2)',
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoImage: {
-    width: 140,
-    height: 90,
-    borderRadius: 16,
-  },
-  logoText: {
-    fontSize: 13,
-    color: '#6366F1',
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  saveButtonGradient: {
-    height: 60,
-    borderRadius: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
-    marginLeft: 10,
-  },
+  container: { flex: 1, backgroundColor: '#FAFAFA' },
+  header: { paddingHorizontal: 24, paddingBottom: 24, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: 'rgba(229, 231, 235, 0.5)' },
+  title: { fontSize: 32, fontWeight: '900', color: '#111827', letterSpacing: -0.5 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  section: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(229, 231, 235, 0.5)', elevation: 3 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginLeft: 10, letterSpacing: -0.3 },
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 13, fontWeight: '600', color: '#6B7280', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { backgroundColor: '#F3F4F6', borderRadius: 12, padding: 16, fontSize: 16, color: '#111827' },
+  row: { flexDirection: 'row' },
+  logoPicker: { alignSelf: 'center', marginBottom: 24 },
+  logoPlaceholder: { width: 140, height: 90, borderRadius: 16, backgroundColor: 'rgba(99, 102, 241, 0.05)', borderWidth: 2, borderColor: 'rgba(99, 102, 241, 0.2)', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
+  logoImage: { width: 140, height: 90, borderRadius: 16 },
+  logoText: { fontSize: 13, color: '#6366F1', fontWeight: '600', marginTop: 8 },
+  saveButtonGradient: { height: 60, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10, elevation: 8 },
+  saveButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', marginLeft: 10 },
 });
-import { Settings as SettingsIcon } from 'lucide-react-native';

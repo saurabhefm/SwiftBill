@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '@/src/db/client';
+import { getDb } from '@/src/db/client';
 import { invoices, businessProfile } from '@/src/db/schema';
 import { count } from 'drizzle-orm';
 
@@ -10,9 +10,12 @@ export const useInvoiceNumber = () => {
   const refreshInvoiceNumber = async () => {
     try {
       setLoading(true);
+      const db = getDb();
+      if (!db) return;
       
       // 1. Get Prefix from Business Profile
-      const profile = await db.query.businessProfile.findFirst();
+      const profileResults = await db.select().from(businessProfile).limit(1);
+      const profile = profileResults[0];
       const prefix = profile?.invoicePrefix || 'INV';
       
       // 2. Count existing invoices
