@@ -9,6 +9,7 @@ SwiftBill is a high-performance, offline-first mobile application designed speci
 
 - **🔋 Solar-First Inventory**: Pre-loaded with 35+ industry-standard items (Adani, Waaree, Tata Power, Sungrow, etc.).
 - **📋 Smart BOM Module**: Create detailed project costings with automatic tax calculations, profit margin tracking, and revision history.
+- **⚡ Preset BOM Generator**: Automatically scale and generate massive 30MWp+ project material lists with perfectly calculated physical unit ratios (Nos, tone, Lot) instantly.
 - **🧾 Instant Invoicing**: Generate professional GST-ready invoices with itemized specifications and brand details.
 - **📄 PDF Export & Share**: One-tap PDF generation for BOMs and Invoices to share directly with clients via WhatsApp or Email.
 - **🏢 Business Profile**: Customize your company logo, bank details, and branding for a professional look.

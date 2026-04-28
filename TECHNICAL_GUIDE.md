@@ -58,7 +58,8 @@ Located in `/context/ThemeContext.tsx`. It uses a React Context to provide `isDa
 
 ### Calculations
 - **Invoices**: Calculates Subtotal -> Applies Discount -> Adds GST per item -> Final Total.
-- **BOMs**: Includes "Cost per Wp" and "Profit Margin" logic. It translates project capacity (e.g., 30kW) into financial metrics.
+- **BOMs**: Includes "Cost per Wp" and "Profit Margin" logic. Translates project capacity into financial metrics.
+- **Preset Engine**: Uses a highly accurate physical ratio scaling system (e.g., `(75 Inverters / 30 MWp) * User_Capacity = X Inverters`). Loaded dynamically from `src/constants/presets.ts`.
 
 ### PDF Generation
 1. The app takes the current Invoice/BOM state.
@@ -87,5 +88,5 @@ If you move to a new laptop:
 - **Signature Error**: Uninstall the old app before installing a new local build.
 
 ---
-**Guide Version**: 1.0.0
+**Guide Version**: 1.1.1
 **Project Lead**: Antigravity AI & Saurabh
