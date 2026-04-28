@@ -40,10 +40,14 @@ export default function CreateBOMScreen() {
   const [notes, setNotes] = useState('Above Pricing is inclusive of supply of above material & installation but excluding the following:\n1. CCTV Surveillance System charges shall be extra\n2. Project insurance shall be in client scope\n3. Temporary electricity connection during construction period shall be client responsibility\n4. Tax shall be extra as actual\n5. Boundary Fencing shall be in client scope\n6. Local issue shall be takencare by client\n7. Extra material shall be taken by Solveig solar pvt ltd\n8. Full-time service support for a period of 3 months from date of commissioning\n9. Defect liability period is not applicable');
 
 
-  const [items, setItems] = useState<BOMItem[]>([{
-
-    description: '', specifications: '', make: '', uom: '', quantity: '1', unitPrice: '0', taxRate: '0', remark: ''
-  }]);
+  const defaultEmptyItem = { description: '', specifications: '', make: '', uom: '', quantity: '1', unitPrice: '0', taxRate: '0', remark: '' };
+  const [items, setItems] = useState<BOMItem[]>([
+    { ...defaultEmptyItem },
+    { ...defaultEmptyItem },
+    { ...defaultEmptyItem },
+    { ...defaultEmptyItem },
+    { ...defaultEmptyItem }
+  ]);
 
 
   const [inventoryList, setInventoryList] = useState<any[]>([]);
@@ -139,7 +143,7 @@ export default function CreateBOMScreen() {
 
 
   const addItem = () => {
-    setItems([...items, { description: '', specifications: '', make: '', uom: '', quantity: '1', unitPrice: '0', taxRate: '0', remark: '' }]);
+    setItems([...items, { ...defaultEmptyItem }]);
   };
 
 
@@ -320,125 +324,52 @@ export default function CreateBOMScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
             <Text style={styles.sectionTitle}>Bill of Materials</Text>
           </View>
 
+          <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.tableContainer}>
+            <View>
+              <View style={styles.tableHeaderRow}>
+                <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>
+                <Text style={[styles.tableHeaderCell, { width: 200 }]}>Material Name</Text>
+                <Text style={[styles.tableHeaderCell, { width: 100 }]}>Make</Text>
+                <Text style={[styles.tableHeaderCell, { width: 80 }]}>UOM</Text>
+                <Text style={[styles.tableHeaderCell, { width: 180 }]}>Specifications</Text>
+                <Text style={[styles.tableHeaderCell, { width: 60 }]}>Qty</Text>
+                <Text style={[styles.tableHeaderCell, { width: 90 }]}>Price</Text>
+                <Text style={[styles.tableHeaderCell, { width: 60 }]}>GST %</Text>
+                <Text style={[styles.tableHeaderCell, { width: 120 }]}>Remark</Text>
+                <Text style={[styles.tableHeaderCell, { width: 80, borderRightWidth: 0, textAlign: 'center' }]}>Actions</Text>
+              </View>
 
-          {items.map((item, index) => (
-            <View key={index} style={styles.itemCard}>
-              <View style={styles.itemCardHeader}>
-                <Text style={styles.itemCardTitle}>Material {index + 1}</Text>
-                <View style={styles.itemCardActions}>
-                  <TouchableOpacity onPress={() => { setActiveItemIndex(index); setModalVisible(true); }} style={[styles.addSmallButton, { marginRight: 8 }]}>
-                    <Text style={styles.addSmallText}>Inventory</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => removeItem(index)} style={styles.removeButton}>
-                    <Trash2 size={16} color="#EF4444" />
-                  </TouchableOpacity>
+              {items.map((item, index) => (
+                <View key={index} style={styles.tableRow}>
+                  <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280' }]}>{index + 1}</Text>
+                  <TextInput style={[styles.tableInput, { width: 200 }]} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />
+                  <TextInput style={[styles.tableInput, { width: 100 }]} value={item.make} onChangeText={(v) => updateItem(index, 'make', v)} placeholder="Make" />
+                  <TextInput style={[styles.tableInput, { width: 80 }]} value={item.uom} onChangeText={(v) => updateItem(index, 'uom', v)} placeholder="UOM" />
+                  <TextInput style={[styles.tableInput, { width: 180 }]} value={item.specifications} onChangeText={(v) => updateItem(index, 'specifications', v)} placeholder="Specs" />
+                  <TextInput style={[styles.tableInput, { width: 60 }]} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" />
+                  <TextInput style={[styles.tableInput, { width: 90 }]} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" />
+                  <TextInput style={[styles.tableInput, { width: 60 }]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" />
+                  <TextInput style={[styles.tableInput, { width: 120, borderRightWidth: 0 }]} value={item.remark} onChangeText={(v) => updateItem(index, 'remark', v)} placeholder="Remark" />
+                  <View style={[styles.tableActionCell, { width: 80 }]}>
+                    <TouchableOpacity onPress={() => { setActiveItemIndex(index); setModalVisible(true); }} style={styles.tableIconBtn}>
+                      <Plus size={16} color="#059669" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => removeItem(index)} style={styles.tableIconBtn}>
+                      <Trash2 size={16} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
+              ))}
+            </View>
+          </ScrollView>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Material Name</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={item.description} 
-                  onChangeText={(v) => updateItem(index, 'description', v)} 
-                  placeholder="Name" 
-                  placeholderTextColor="#94a3b8"
-                />
-              </View>
-
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.label}>Make</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={item.make} 
-                    onChangeText={(v) => updateItem(index, 'make', v)} 
-                    placeholder="Brand" 
-                    placeholderTextColor="#94a3b8"
-                  />
-                </View>
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>UOM</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={item.uom} 
-                    onChangeText={(v) => updateItem(index, 'uom', v)} 
-                    placeholder="MWp/Nos" 
-                    placeholderTextColor="#94a3b8"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Technical Specification</Text>
-                <TextInput 
-                  style={[styles.input, { height: 60 }]} 
-                  value={item.specifications} 
-                  onChangeText={(v) => updateItem(index, 'specifications', v)} 
-                  multiline 
-                  placeholder="Specs" 
-                  placeholderTextColor="#94a3b8"
-                />
-              </View>
-
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.label}>Quantity</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={item.quantity} 
-                    onChangeText={(v) => updateItem(index, 'quantity', v)} 
-                    keyboardType="numeric" 
-                    placeholder="0" 
-                    placeholderTextColor="#94a3b8"
-                  />
-                </View>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.label}>Unit Price</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={item.unitPrice} 
-                    onChangeText={(v) => updateItem(index, 'unitPrice', v)} 
-                    keyboardType="numeric" 
-                    placeholder="0.00" 
-                    placeholderTextColor="#94a3b8"
-                  />
-                </View>
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>GST (%)</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={item.taxRate} 
-                    onChangeText={(v) => updateItem(index, 'taxRate', v)} 
-                    keyboardType="numeric" 
-                    placeholder="0" 
-                    placeholderTextColor="#94a3b8"
-                  />
-                </View>
-              </View>
-
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Remark</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={item.remark} 
-                  onChangeText={(v) => updateItem(index, 'remark', v)} 
-                  placeholder="Additional notes..." 
-                  placeholderTextColor="#94a3b8"
-                />
-              </View>
-              </View>
-            ))}
-
-
-          <TouchableOpacity onPress={addItem} style={styles.addItemBottomButton}>
-            <Plus size={20} color="#059669" />
-            <Text style={styles.addItemBottomText}>Add Next Material</Text>
+          <TouchableOpacity onPress={addItem} style={[styles.addItemBottomButton, { marginTop: 12 }]}>
+            <Plus size={16} color="#059669" />
+            <Text style={styles.addItemBottomText}>Add Row</Text>
           </TouchableOpacity>
         </View>
 
@@ -579,13 +510,66 @@ const styles = StyleSheet.create({
   label: { fontSize: 12, fontWeight: '700', color: '#6B7280', marginBottom: 6, textTransform: 'uppercase' },
   input: { backgroundColor: '#F3F4F6', borderRadius: 12, padding: 14, fontSize: 16, color: '#111827' },
   row: { flexDirection: 'row' },
-  itemCard: { backgroundColor: '#F9FAFB', borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#F3F4F6' },
-  itemCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  itemCardTitle: { fontSize: 14, fontWeight: '700', color: '#374151' },
-  itemCardActions: { flexDirection: 'row' },
-  removeButton: { padding: 8, backgroundColor: '#FEF2F2', borderRadius: 8 },
-  addSmallButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  addSmallText: { color: '#059669', fontWeight: '700', marginLeft: 6, fontSize: 12 },
+  tableContainer: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    marginTop: 8,
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#D1D5DB',
+  },
+  tableHeaderCell: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4B5563',
+    borderRightWidth: 1,
+    borderRightColor: '#D1D5DB',
+    textAlign: 'left',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  tableCellText: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    fontSize: 12,
+    color: '#374151',
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+  },
+  tableInput: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    fontSize: 12,
+    color: '#111827',
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+    height: 44,
+    backgroundColor: 'transparent',
+  },
+  tableActionCell: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    height: 44,
+    borderLeftWidth: 1,
+    borderLeftColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+  },
+  tableIconBtn: {
+    padding: 6,
+  },
   summarySection: { backgroundColor: '#111827', borderRadius: 24, padding: 24, alignItems: 'center' },
   summaryLabel: { color: 'rgba(255, 255, 255, 0.6)', fontWeight: '600', fontSize: 13, textTransform: 'uppercase' },
   summaryValue: { color: '#FFFFFF', fontSize: 28, fontWeight: '900', marginTop: 8 },

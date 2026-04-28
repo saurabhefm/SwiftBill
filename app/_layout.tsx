@@ -10,13 +10,12 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // Force hide immediately on mount to prevent any splash screen lock
+    SplashScreen.hideAsync().catch(() => {});
+    setReady(true);
+
     async function startEngine() {
       try {
-        // 1. Show the UI fast
-        setTimeout(async () => {
-          setReady(true);
-          await SplashScreen.hideAsync().catch(() => {});
-        }, 1000);
 
         // 2. Start the Database in the background
         const { initDb } = await import('../src/db/client');
