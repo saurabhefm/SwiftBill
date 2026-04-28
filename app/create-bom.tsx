@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { generateBOMHtml } from '@/src/utils/bomTemplateGenerator';
+import { GROUND_MOUNTED_30MWP_PRESET } from '@/src/constants/presets';
 
 interface BOMItem {
   id?: number;
@@ -26,7 +27,7 @@ interface BOMItem {
 
 
 export default function CreateBOMScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, presetCapacity } = useLocalSearchParams();
   const isEditing = !!id;
 
   const [projectName, setProjectName] = useState('');
@@ -89,9 +90,38 @@ export default function CreateBOMScreen() {
 
 
   useEffect(() => {
-    if (isEditing) loadBOM();
+    if (isEditing) {
+      loadBOM();
+    } else if (presetCapacity) {
+      loadPreset(parseFloat(presetCapacity as string));
+    }
     loadInventory();
-  }, [id]);
+  }, [id, presetCapacity]);
+
+  const loadPreset = (capacity: number) => {
+    if (isNaN(capacity) || capacity <= 0) return;
+    
+    setProjectCapacity(capacity.toString());
+    
+    const presetItems: BOMItem[] = GROUND_MOUNTED_30MWP_PRESET.map(item => {
+      const scaledQty = item.qtyPerMWp * capacity;
+      const roundedQty = Math.round(scaledQty * 1000) / 1000;
+      
+      return {
+        description: item.description,
+        specifications: item.specifications,
+        make: item.make,
+        uom: item.uom,
+        quantity: roundedQty.toString(),
+        unitPrice: item.unitPrice.toString(),
+        taxRate: item.taxRate.toString(),
+        remark: item.remark
+      };
+    });
+    
+    setItems(presetItems);
+    setProjectName(`${capacity} MWp Solar Project`);
+  };
 
   const loadInventory = async () => {
     const db = getDb();

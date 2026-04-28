@@ -10,15 +10,23 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    console.log('[Boot] useEffect triggered in _layout.tsx');
     // Force hide immediately on mount to prevent any splash screen lock
-    SplashScreen.hideAsync().catch(() => {});
+    SplashScreen.hideAsync().then(() => {
+      console.log('[Boot] Splash screen hidden successfully');
+    }).catch((e) => {
+      console.error('[Boot] Splash screen hide failed:', e);
+    });
+    
     setReady(true);
+    console.log('[Boot] setReady(true) called');
 
     async function startEngine() {
       try {
-
+        console.log('[Boot] startEngine() began');
         // 2. Start the Database in the background
         const { initDb } = await import('../src/db/client');
+        console.log('[Boot] db client imported');
         await initDb();
         console.log('[System] Database Engine Connected');
       } catch (e) {

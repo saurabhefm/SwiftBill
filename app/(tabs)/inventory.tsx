@@ -240,30 +240,140 @@ export default function InventoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
-  gradientHeader: { paddingHorizontal: 24, paddingBottom: 32, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
-  headerTextContainer: { flex: 1 },
-  gradientTitle: { fontSize: 34, fontWeight: '900', color: '#FFFFFF' },
-  subtitle: { fontSize: 16, color: 'rgba(255, 255, 255, 0.8)' },
-  headerActions: { flexDirection: 'row', alignItems: 'center' },
-  addButton: { backgroundColor: '#FFFFFF', width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
-  header: { paddingHorizontal: 24, paddingBottom: 24, backgroundColor: '#FFFFFF' },
-  title: { fontSize: 32, fontWeight: '900', color: '#111827' },
-  listContent: { padding: 20 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#EEE' },
-  cardInfo: { flex: 1 },
-  itemName: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  itemPrice: { fontSize: 16, fontWeight: '700', color: '#6366F1', marginTop: 4 },
-  tag: { fontSize: 12, color: '#6B7280', textTransform: 'uppercase' },
-  cardActions: { flexDirection: 'row' },
-  iconButton: { padding: 10, backgroundColor: '#F3F4F6', borderRadius: 12 },
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: 13, fontWeight: '600', color: '#6B7280', marginBottom: 8 },
-  input: { backgroundColor: '#F3F4F6', borderRadius: 12, padding: 16, fontSize: 16 },
-  row: { flexDirection: 'row' },
-  buttonRow: { flexDirection: 'row', marginTop: 12 },
-  cancelButton: { flex: 1, backgroundColor: '#F3F4F6', borderRadius: 16, height: 60, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  cancelButtonText: { fontSize: 18, fontWeight: '700', color: '#374151' },
-  saveButton: { borderRadius: 16, height: 60, justifyContent: 'center', alignItems: 'center', width: '100%' },
-  saveButtonText: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FAFAFA' 
+  },
+  gradientHeader: { 
+    paddingHorizontal: 24, 
+    paddingBottom: 32, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-end', 
+    borderBottomLeftRadius: 32, 
+    borderBottomRightRadius: 32 
+  },
+  headerTextContainer: { 
+    flex: 1 
+  },
+  gradientTitle: { 
+    fontSize: 34, 
+    fontWeight: '900', 
+    color: '#FFFFFF' 
+  },
+  subtitle: { 
+    fontSize: 16, 
+    color: 'rgba(255, 255, 255, 0.8)' 
+  },
+  headerActions: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  addButton: { 
+    backgroundColor: '#FFFFFF', 
+    width: 56, 
+    height: 56, 
+    borderRadius: 28, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  header: { 
+    paddingHorizontal: 24, 
+    paddingBottom: 24, 
+    backgroundColor: '#FFFFFF' 
+  },
+  title: { 
+    fontSize: 32, 
+    fontWeight: '900', 
+    color: '#111827' 
+  },
+  listContent: { 
+    padding: 20 
+  },
+  card: { 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 20, 
+    padding: 20, 
+    marginBottom: 16, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: '#EEE' 
+  },
+  cardInfo: { 
+    flex: 1 
+  },
+  itemName: { 
+    fontSize: 18, 
+    fontWeight: '800', 
+    color: '#111827' 
+  },
+  itemPrice: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: '#6366F1', 
+    marginTop: 4 
+  },
+  tag: { 
+    fontSize: 12, 
+    color: '#6B7280', 
+    textTransform: 'uppercase' 
+  },
+  cardActions: { 
+    flexDirection: 'row' 
+  },
+  iconButton: { 
+    padding: 10, 
+    backgroundColor: '#F3F4F6', 
+    borderRadius: 12 
+  },
+  inputGroup: { 
+    marginBottom: 20 
+  },
+  label: { 
+    fontSize: 13, 
+    fontWeight: '600', 
+    color: '#6B7280', 
+    marginBottom: 8 
+  },
+  input: { 
+    backgroundColor: '#F3F4F6', 
+    borderRadius: 12, 
+    padding: 16, 
+    fontSize: 16 
+  },
+  row: { 
+    flexDirection: 'row' 
+  },
+  buttonRow: { 
+    flexDirection: 'row', 
+    marginTop: 12 
+  },
+  cancelButton: { 
+    flex: 1, 
+    backgroundColor: '#F3F4F6', 
+    borderRadius: 16, 
+    height: 60, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: 10 
+  },
+  cancelButtonText: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    color: '#374151' 
+  },
+  saveButton: { 
+    borderRadius: 16, 
+    height: 60, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    width: '100%' 
+  },
+  saveButtonText: { 
+    fontSize: 18, 
+    fontWeight: '800', 
+    color: '#FFFFFF' 
+  },
 });

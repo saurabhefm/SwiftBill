@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Text, Alert } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, Text, Alert, Modal, TextInput } from 'react-native';
 import { getDb } from '@/src/db/client';
 import { boms, clients, businessProfile } from '@/src/db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 
 export default function BOMListScreen() {
   const [projectList, setProjectList] = useState<any[]>([]);
+  const [presetModalVisible, setPresetModalVisible] = useState(false);
+  const [presetCapacity, setPresetCapacity] = useState('');
   const insets = useSafeAreaInsets();
 
   const fetchBOMs = async () => {
@@ -57,6 +59,14 @@ export default function BOMListScreen() {
     ]);
   };
 
+  const handleCreateNew = () => {
+    Alert.alert('Create New BOM', 'How would you like to start?', [
+      { text: 'Manual Entry', onPress: () => router.push('/create-bom') },
+      { text: 'Use 30MWp Preset Logic', onPress: () => setPresetModalVisible(true) },
+      { text: 'Cancel', style: 'cancel' }
+    ]);
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -71,7 +81,7 @@ export default function BOMListScreen() {
         </View>
         <TouchableOpacity 
           style={styles.addButton} 
-          onPress={() => router.push('/create-bom')}
+          onPress={handleCreateNew}
           activeOpacity={0.8}
         >
           <Plus color="#10B981" size={24} />
@@ -121,6 +131,34 @@ export default function BOMListScreen() {
           </View>
         }
       />
+
+      <Modal visible={presetModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Project Capacity</Text>
+            <Text style={styles.modalSubtitle}>Enter the size in MWp to scale the materials automatically.</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="numeric"
+              placeholder="e.g. 5"
+              value={presetCapacity}
+              onChangeText={setPresetCapacity}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setPresetModalVisible(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalConfirmBtn} onPress={() => {
+                setPresetModalVisible(false);
+                router.push({ pathname: '/create-bom', params: { presetCapacity } });
+              }}>
+                <Text style={styles.modalConfirmText}>Generate</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -268,5 +306,61 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 16,
+  },
+  modalInput: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 18,
+    color: '#111827',
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  modalCancelBtn: {
+    padding: 12,
+    marginRight: 8,
+  },
+  modalCancelText: {
+    color: '#6B7280',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  modalConfirmBtn: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  modalConfirmText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
