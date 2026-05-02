@@ -15,11 +15,14 @@ export default function BOMListScreen() {
   const [presetCapacity, setPresetCapacity] = useState('');
   const insets = useSafeAreaInsets();
 
+  const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [newProjectModalVisible, setNewProjectModalVisible] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+
   const fetchBOMs = async () => {
     try {
       const db = getDb();
       if (!db) return;
-      // Fetch all BOMs, ordered by date and revision
       const results = await db.select({
         id: boms.id,
         projectName: boms.projectName,
@@ -50,6 +53,7 @@ export default function BOMListScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         try {
+          const db = getDb();
           await db.delete(boms).where(eq(boms.id, id));
           fetchBOMs();
         } catch (error) {
@@ -59,13 +63,33 @@ export default function BOMListScreen() {
     ]);
   };
 
-  const handleCreateNew = () => {
-    Alert.alert('Create New BOM', 'How would you like to start?', [
-      { text: 'Manual Entry', onPress: () => router.push('/create-bom') },
+  const handleProjectOptions = (pName: string) => {
+    Alert.alert('Create BOM for ' + pName, 'How would you like to start?', [
+      { text: 'Manual Entry', onPress: () => router.push({ pathname: '/create-bom', params: { newProjectName: pName } }) },
       { text: 'Use 30MWp Preset Logic', onPress: () => setPresetModalVisible(true) },
+      { text: 'Create BOM with all material', onPress: () => router.push({ pathname: '/create-bom', params: { newProjectName: pName, allMaterials: 'true' } }) },
       { text: 'Cancel', style: 'cancel' }
     ]);
   };
+
+  const handleCreateNew = () => {
+    setNewProjectName('');
+    setNewProjectModalVisible(true);
+  };
+
+  const groupedProjects = projectList.reduce((acc: any[], current: any) => {
+    const existing = acc.find((p: any) => p.projectName === current.projectName);
+    if (existing) {
+      existing.revisions.push(current);
+    } else {
+      acc.push({
+        projectName: current.projectName,
+        clientName: current.clientName,
+        revisions: [current]
+      });
+    }
+    return acc;
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -89,48 +113,86 @@ export default function BOMListScreen() {
       </LinearGradient>
 
       <FlatList
-        data={projectList}
-        keyExtractor={item => item.id.toString()}
+        data={groupedProjects}
+        keyExtractor={item => item.projectName}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.card}
-            onPress={() => router.push({ pathname: '/create-bom', params: { id: item.id } })}
-          >
-            <View style={styles.cardHeader}>
+          <View style={styles.card}>
+            <TouchableOpacity 
+              style={styles.cardHeader}
+              onPress={() => setExpandedProject(expandedProject === item.projectName ? null : item.projectName)}
+            >
               <View style={styles.projectInfo}>
                 <Text style={styles.projectName}>{item.projectName}</Text>
-                <Text style={styles.clientName}>{item.clientName || 'No Client'}</Text>
+                <Text style={styles.clientName}>{item.clientName || 'No Client'} • {item.revisions.length} Revisions</Text>
               </View>
-              <View style={styles.revisionBadge}>
-                <History size={12} color="#059669" style={{ marginRight: 4 }} />
-                <Text style={styles.revisionText}>Rev {item.revision}</Text>
+              <View style={styles.viewButton}>
+                <ChevronRight color="#FFF" size={20} style={{ transform: [{ rotate: expandedProject === item.projectName ? '90deg' : '0deg' }] }} />
               </View>
-            </View>
+            </TouchableOpacity>
 
-            <View style={styles.cardFooter}>
-              <View>
-                <Text style={styles.dateText}>{format(new Date(item.date), 'dd MMM yyyy')}</Text>
-                <Text style={styles.totalLabel}>Est. Total Cost</Text>
-                <Text style={styles.totalValue}>₹{item.totalCost.toLocaleString()}</Text>
+            {expandedProject === item.projectName && (
+              <View style={styles.revisionsContainer}>
+                {item.revisions.map((rev: any) => (
+                  <TouchableOpacity 
+                    key={rev.id}
+                    style={styles.revisionRow}
+                    onPress={() => router.push({ pathname: '/create-bom', params: { id: rev.id } })}
+                  >
+                    <View style={styles.revisionInfo}>
+                      <View style={styles.revisionBadge}>
+                        <History size={12} color="#059669" style={{ marginRight: 4 }} />
+                        <Text style={styles.revisionText}>Rev {rev.revision}</Text>
+                      </View>
+                      <Text style={styles.dateText}>{format(new Date(rev.date), 'dd MMM yy')}</Text>
+                    </View>
+                    
+                    <View style={styles.revisionActions}>
+                      <Text style={styles.totalValue}>₹{rev.totalCost.toLocaleString()}</Text>
+                      <TouchableOpacity onPress={() => handleDelete(rev.id)} style={[styles.deleteButton, { marginLeft: 12 }]}>
+                        <Trash2 size={16} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
-              <View style={styles.actions}>
-                <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
-                  <Trash2 size={18} color="#EF4444" />
-                </TouchableOpacity>
-                <View style={styles.viewButton}>
-                  <ChevronRight color="#FFF" size={20} />
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
+            )}
+          </View>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No BOMs found. Create your first project material list!</Text>
+            <Text style={styles.emptyText}>No Projects found. Create your first project!</Text>
           </View>
         }
       />
+
+      <Modal visible={newProjectModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>New Project</Text>
+            <Text style={styles.modalSubtitle}>Enter the project name to get started.</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Project Name"
+              value={newProjectName}
+              onChangeText={setNewProjectName}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setNewProjectModalVisible(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalConfirmBtn} onPress={() => {
+                if (newProjectName.trim() === '') return Alert.alert('Error', 'Project name required');
+                setNewProjectModalVisible(false);
+                handleProjectOptions(newProjectName);
+              }}>
+                <Text style={styles.modalConfirmText}>Next</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={presetModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -151,7 +213,7 @@ export default function BOMListScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalConfirmBtn} onPress={() => {
                 setPresetModalVisible(false);
-                router.push({ pathname: '/create-bom', params: { presetCapacity } });
+                router.push({ pathname: '/create-bom', params: { presetCapacity, newProjectName } });
               }}>
                 <Text style={styles.modalConfirmText}>Generate</Text>
               </TouchableOpacity>
@@ -227,8 +289,28 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+  },
+  revisionsContainer: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 8,
+  },
+  revisionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  revisionInfo: {
+    flex: 1,
+  },
+  revisionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   projectInfo: {
     flex: 1,

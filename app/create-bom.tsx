@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { generateBOMHtml } from '@/src/utils/bomTemplateGenerator';
-import { GROUND_MOUNTED_30MWP_PRESET } from '@/src/constants/presets';
+import { GROUND_MOUNTED_30MWP_PRESET, ALL_MATERIALS_PRESET } from '@/src/constants/presets';
 
 interface BOMItem {
   id?: number;
@@ -22,12 +22,13 @@ interface BOMItem {
   quantity: string;
   unitPrice: string;
   taxRate: string;
+  isTaxEnabled?: boolean;
   remark: string;
 }
 
 
 export default function CreateBOMScreen() {
-  const { id, presetCapacity } = useLocalSearchParams();
+  const { id, presetCapacity, allMaterials } = useLocalSearchParams();
   const isEditing = !!id;
 
   const [projectName, setProjectName] = useState('');
@@ -37,11 +38,13 @@ export default function CreateBOMScreen() {
   const [globalTaxRate, setGlobalTaxRate] = useState('0');
   const [projectCapacity, setProjectCapacity] = useState('30');
   const [profitRate, setProfitRate] = useState('0');
+  const [contingencyRate, setContingencyRate] = useState('0');
+  const [isItemTaxEnabled, setIsItemTaxEnabled] = useState(true);
   const [inventorySearch, setInventorySearch] = useState('');
   const [notes, setNotes] = useState('Above Pricing is inclusive of supply of above material & installation but excluding the following:\n1. CCTV Surveillance System charges shall be extra\n2. Project insurance shall be in client scope\n3. Temporary electricity connection during construction period shall be client responsibility\n4. Tax shall be extra as actual\n5. Boundary Fencing shall be in client scope\n6. Local issue shall be takencare by client\n7. Extra material shall be taken by Solveig solar pvt ltd\n8. Full-time service support for a period of 3 months from date of commissioning\n9. Defect liability period is not applicable');
 
 
-  const defaultEmptyItem = { description: '', specifications: '', make: '', uom: '', quantity: '1', unitPrice: '0', taxRate: '0', remark: '' };
+  const defaultEmptyItem = { description: '', specifications: '', make: '', uom: '', quantity: '1', unitPrice: '0', taxRate: '0', isTaxEnabled: true, remark: '' };
   const [items, setItems] = useState<BOMItem[]>([
     { ...defaultEmptyItem },
     { ...defaultEmptyItem },
@@ -55,11 +58,18 @@ export default function CreateBOMScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
 
+  const toggleAllTaxes = () => {
+    const newState = !isItemTaxEnabled;
+    setIsItemTaxEnabled(newState);
+    setItems(items.map(item => ({ ...item, isTaxEnabled: newState })));
+  };
+
   const subtotal = items.reduce((acc, item) => {
     return acc + (parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0);
   }, 0);
 
   const itemTaxes = items.reduce((acc, item) => {
+    if (item.isTaxEnabled === false) return acc;
     const rate = parseFloat(item.taxRate) || 0;
     if (rate > 0) {
       return acc + (parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0) * (rate / 100);
@@ -68,6 +78,7 @@ export default function CreateBOMScreen() {
   }, 0);
 
   const globalTaxBasis = items.reduce((acc, item) => {
+    if (item.isTaxEnabled === false) return acc;
     const rate = parseFloat(item.taxRate) || 0;
     if (rate === 0) {
       return acc + (parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0);
@@ -79,8 +90,9 @@ export default function CreateBOMScreen() {
   const totalTax = itemTaxes + globalTaxAmount;
   const totalProjectCost = subtotal + totalTax;
   
-  const profitAmount = (totalProjectCost * (parseFloat(profitRate) || 0)) / 100;
-  const totalBasicCost = totalProjectCost + profitAmount;
+  const contingencyAmount = parseFloat(contingencyRate) || 0;
+  const profitAmount = parseFloat(profitRate) || 0;
+  const totalBasicCost = totalProjectCost + profitAmount + contingencyAmount;
   
   const capacityInWp = (parseFloat(projectCapacity) || 1) * 1000000;
   const costPerWp = totalProjectCost / capacityInWp;
@@ -94,9 +106,11 @@ export default function CreateBOMScreen() {
       loadBOM();
     } else if (presetCapacity) {
       loadPreset(parseFloat(presetCapacity as string));
+    } else if (allMaterials) {
+      loadAllMaterialsPreset();
     }
     loadInventory();
-  }, [id, presetCapacity]);
+  }, [id, presetCapacity, allMaterials]);
 
   const loadPreset = (capacity: number) => {
     if (isNaN(capacity) || capacity <= 0) return;
@@ -123,6 +137,17 @@ export default function CreateBOMScreen() {
     setProjectName(`${capacity} MWp Solar Project`);
   };
 
+  const loadAllMaterialsPreset = () => {
+    const presetItems: BOMItem[] = ALL_MATERIALS_PRESET.map(item => ({
+      ...defaultEmptyItem,
+      description: item.description,
+      make: item.make,
+      quantity: '0',
+    }));
+    setItems(presetItems);
+    if (!projectName) setProjectName(`New Solar Project`);
+  };
+
   const loadInventory = async () => {
     const db = getDb();
     if (!db) return;
@@ -142,6 +167,7 @@ export default function CreateBOMScreen() {
         setGlobalTaxRate(bom.globalTaxRate?.toString() || '0');
         setProjectCapacity(bom.projectCapacity?.toString() || '30');
         setProfitRate(bom.profitRate?.toString() || '0');
+        setContingencyRate(bom.contingencyRate?.toString() || '0');
         if (bom.notes) setNotes(bom.notes);
 
         if (bom.clientId) {
@@ -159,8 +185,10 @@ export default function CreateBOMScreen() {
           quantity: i.quantity.toString(),
           unitPrice: i.unitPrice.toString(),
           taxRate: i.taxRate?.toString() || '0',
+          isTaxEnabled: i.isTaxEnabled === 1,
           remark: i.remark || '',
         })));
+        setIsItemTaxEnabled(results.length === 0 || results[0].isTaxEnabled === 1);
       }
     } catch (e) { console.error(e); }
   };
@@ -236,6 +264,7 @@ export default function CreateBOMScreen() {
         globalTaxAmount,
         projectCapacity: parseFloat(projectCapacity) || 30,
         profitRate: parseFloat(profitRate) || 0,
+        contingencyRate: parseFloat(contingencyRate) || 0,
         totalCost: totalProjectCost,
         notes,
         status: 'Draft',
@@ -382,7 +411,7 @@ export default function CreateBOMScreen() {
                   <TextInput style={[styles.tableInput, { width: 180 }]} value={item.specifications} onChangeText={(v) => updateItem(index, 'specifications', v)} placeholder="Specs" />
                   <TextInput style={[styles.tableInput, { width: 60 }]} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" />
                   <TextInput style={[styles.tableInput, { width: 90 }]} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" />
-                  <TextInput style={[styles.tableInput, { width: 60 }]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" />
+                  <TextInput style={[styles.tableInput, { width: 60 }]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" editable={isItemTaxEnabled} />
                   <TextInput style={[styles.tableInput, { width: 120, borderRightWidth: 0 }]} value={item.remark} onChangeText={(v) => updateItem(index, 'remark', v)} placeholder="Remark" />
                   <View style={[styles.tableActionCell, { width: 80 }]}>
                     <TouchableOpacity onPress={() => { setActiveItemIndex(index); setModalVisible(true); }} style={styles.tableIconBtn}>
@@ -411,14 +440,41 @@ export default function CreateBOMScreen() {
               <Text style={styles.label}>Capacity (MWp)</Text>
               <TextInput style={styles.input} value={projectCapacity} onChangeText={setProjectCapacity} keyboardType="numeric" placeholder="30" />
             </View>
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Profit (%)</Text>
+            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+              <Text style={styles.label}>Profit (₹)</Text>
               <TextInput style={styles.input} value={profitRate} onChangeText={setProfitRate} keyboardType="numeric" placeholder="0" />
             </View>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.label}>Contingency (₹)</Text>
+              <TextInput style={styles.input} value={contingencyRate} onChangeText={setContingencyRate} keyboardType="numeric" placeholder="0" />
+            </View>
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Global GST (%) - Applied if item GST is 0</Text>
-            <TextInput style={styles.input} value={globalTaxRate} onChangeText={setGlobalTaxRate} keyboardType="numeric" placeholder="0" />
+          <View style={[styles.inputGroup, { marginTop: 8 }]}>
+            <Text style={styles.label}>Global Tax Options</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={[styles.label, { fontSize: 10, color: '#9CA3AF' }]}>Global GST (%)</Text>
+                <TextInput style={styles.input} value={globalTaxRate} onChangeText={setGlobalTaxRate} keyboardType="numeric" placeholder="0" />
+              </View>
+              <TouchableOpacity 
+                activeOpacity={0.8}
+                onPress={toggleAllTaxes} 
+                style={{ 
+                  flex: 1, 
+                  paddingVertical: 14, 
+                  borderRadius: 12, 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  backgroundColor: isItemTaxEnabled ? '#D1FAE5' : '#F3F4F6', 
+                  borderWidth: 1, 
+                  borderColor: isItemTaxEnabled ? '#10B981' : '#D1D5DB' 
+                }}
+              >
+                <Text style={{ color: isItemTaxEnabled ? '#059669' : '#6B7280', fontWeight: 'bold', fontSize: 13 }}>
+                  {isItemTaxEnabled ? 'Item GST: ON' : 'Item GST: OFF'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -450,7 +506,7 @@ export default function CreateBOMScreen() {
           </View>
           
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Profit / Wp (@{profitRate}%)</Text>
+            <Text style={styles.summaryLabel}>Profit / Wp</Text>
             <Text style={styles.summaryText}>₹{profitPerWp.toFixed(4)}</Text>
           </View>
 
@@ -474,6 +530,12 @@ export default function CreateBOMScreen() {
           >
             <Share2 color="#374151" size={24} />
           </TouchableOpacity>
+
+          {isEditing && (
+            <TouchableOpacity activeOpacity={0.8} style={[styles.secondaryButton, { flex: 1, marginRight: 12, backgroundColor: '#ECFDF5', borderColor: '#10B981', borderWidth: 1 }]} onPress={() => handleSave(true)}>
+              <Text style={{ color: '#059669', fontWeight: 'bold', fontSize: 14 }}>Save as Rev {revision + 1}</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity activeOpacity={0.8} style={{ flex: 1 }} onPress={() => handleSave(false)}>
             <LinearGradient colors={['#059669', '#10B981']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.actionButton, styles.primaryButtonGradient]}>

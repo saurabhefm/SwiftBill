@@ -93,6 +93,14 @@ export const generateBOMHtml = (
           .totals-row.grand h2 { margin: 0; font-size: 22px; color: #10b981; }
           
           .footer { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 10px; color: #666; }
+          
+          @media print {
+            html, body { height: auto !important; }
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+          }
         </style>
       </head>
       <body>
@@ -135,28 +143,20 @@ export const generateBOMHtml = (
 
         <div class="totals-section">
           <div class="totals-row">
-            <p>SOLAR PROJECT COST</p>
-            <p>${currencySymbol}${bom.subtotal.toLocaleString()}</p>
+            <p>TOTAL MATERIAL COST</p>
+            <p>${currencySymbol}${bom.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
           <div class="totals-row">
-            <p>TOTAL GST</p>
-            <p>${currencySymbol}${(bom.totalCost - bom.subtotal).toLocaleString()}</p>
-          </div>
-          <div class="totals-row highlight">
-            <p>SOLAR PROJECT COST / Wp</p>
-            <p>${currencySymbol}${costPerWp.toFixed(4)}</p>
-          </div>
-          <div class="totals-row">
-            <p>PROFIT / Wp @ ${bom.profitRate}%</p>
-            <p>${currencySymbol}${profitPerWp.toFixed(4)}</p>
-          </div>
-          <div class="totals-row highlight">
-            <p style="color: #10b981; font-weight: bold;">TOTAL BASIC COST / Wp</p>
-            <p style="color: #10b981; font-weight: bold;">${currencySymbol}${basicCostPerWp.toFixed(4)}</p>
+            <p>ESTIMATED GST</p>
+            <p>${currencySymbol}${(bom.totalCost - bom.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
           <div class="totals-row grand">
             <p style="font-weight: bold; opacity: 1;">TOTAL PROJECT COST</p>
             <h2>${currencySymbol}${bom.totalBasicCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
+          </div>
+          <div class="totals-row highlight" style="margin-top: 10px;">
+            <p style="color: #10b981; font-weight: bold;">COST / Wp</p>
+            <p style="color: #10b981; font-weight: bold;">${currencySymbol}${basicCostPerWp.toFixed(4)}</p>
           </div>
         </div>
 

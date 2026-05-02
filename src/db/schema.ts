@@ -73,6 +73,7 @@ export const boms = sqliteTable('boms', {
   globalTaxAmount: real('global_tax_amount').notNull().default(0),
   projectCapacity: real('project_capacity').notNull().default(30),
   profitRate: real('profit_rate').notNull().default(0),
+  contingencyRate: real('contingency_rate').notNull().default(0),
   totalCost: real('total_cost').notNull().default(0),
   status: text('status').notNull().default('Draft'),
   notes: text('notes'),
@@ -89,6 +90,7 @@ export const bomItems = sqliteTable('bom_items', {
   quantity: real('quantity').notNull().default(1),
   unitPrice: real('unit_price').notNull().default(0),
   taxRate: real('tax_rate').notNull().default(0),
+  isTaxEnabled: integer('is_tax_enabled').notNull().default(1),
   total: real('total').notNull().default(0),
   remark: text('remark'),
 });

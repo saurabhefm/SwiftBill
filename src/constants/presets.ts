@@ -240,3 +240,33 @@ export const GROUND_MOUNTED_30MWP_PRESET = [
     remark: ''
   }
 ];
+
+export const ALL_MATERIALS_PRESET = [
+  { description: 'Solar PV Module', make: 'Warree/Emmvee/Rayzon/Goldi/GREW/Future/Jackson/Vikram/ Gautam/ Solex/ Sova/Premier/ INA Solar/Loom/solex/reputed' },
+  { description: 'String Inverter', make: 'Watt power/Sungrow/sineng /delta/reputed make' },
+  { description: 'MMS Structure', make: 'Standard/Reputed Make as per Design' },
+  { description: 'LT Panel', make: 'Trackerz switchgear/Alnico/Themis/electrocontrol/solarsphare/Electricare/LS power/KRYFS/Vinayak/Parth Engineering/expel/reputed' },
+  { description: 'Aux Panel/LTDB', make: 'Trackerz switchgear/Alnico/Themis/electrocontrol/solarsphare/Electricare/LS power/KRYFS/Vinayak/Parth Engineering/expel/reputed' },
+  { description: 'HT Panel/VCB', make: 'Trackerz switchgear/Alnico/Themis/electrocontrol/tricolite/Electricare/LS power/KRYFS/Reputed' },
+  { description: 'Inverter duty transformer', make: 'ABC/Royal/Powertech/Kv transpower/enerwave transformer/AUM transformer/Silchar/Powerlite/KRYFS/ECS Industries Pvt. Ltd/reputed make' },
+  { description: 'Auxilliary Transformer', make: 'ABC/Royal/Powertech/Kv transpower/enerwave transformer/KRYFS/ECS Industries Pvt. Ltd/Prima/Skipper/Kalpa/reputed make' },
+  { description: 'UPS', make: 'Power One /Numeric /Fuji Electric/Delta/luminiou/Equivalent Others' },
+  { description: 'SCADA Monitoring System', make: 'HKRP/SURYALOG/Trascko/AMR logix/Adaptive/EIT automation/Inteli Solar/reputed make' },
+  { description: 'Weather Station', make: 'Trinty Touch /Surya Logix / Campbell/MB Control/Hadey/ Souryan/ Equivalent Others' },
+  { description: 'AC Cables', make: 'Polycab/apar/Avocab/RR/havells/Ravin /Reputed make' },
+  { description: 'DC Cables', make: 'Polycab/apar/Avocab/RR/Reputed make' },
+  { description: 'control & Communication Cable', make: 'Diacab /Ravin /Apar/Havells/Polycab/ GEMSCAB / Avocab/ Special Cables/ Lapp / Finolex/Polycab/Spectrum/AKSH/Equivalent Others' },
+  { description: 'Multi Contact Connector', make: 'Staubli/ Bizlink /Elemax/Elcom/Pheonix/Multi contact/ Equivalent Others' },
+  { description: 'Earthing Rod with Chamber cover & chemical', make: 'SABO/JEF/JSR/POWERTRAC/ True Power / Itorrent/Orbital/Reputed make' },
+  { description: 'Earthing Cable, Strip & Accessories', make: 'SABO/JEF/JSR/POWERTRAC/ True Power / Itorrent/Orbital/Reputed make' },
+  { description: 'Lightning Arrester With High mast & Accessories', make: 'SABO/JEF/ True Power / Itorrent/Orbital/Reputed make' },
+  { description: 'Conduit', make: 'Tirupati/Supreme/Finolax/Equivalent' },
+  { description: 'Cable Tray', make: 'Standard/Reputed Make' },
+  { description: 'Lugs and Gland', make: 'Comet/ Hex/ Dowell/ Equivalent make' },
+  { description: 'Water storage tank', make: 'Astral/Jain/Supreme/Finolax/Appolo/Equivalent' },
+  { description: 'Module Cleaning System', make: 'Astral/Jain/Supreme/Finolax/Appolo/Equivalent' },
+  { description: 'Peripheral Lighting', make: 'Philiphs /Bajaj /CGL/Havells/ Equivalent Others' },
+  { description: 'Streetlight for Switch yard', make: 'Philiphs /Bajaj /CGL/Havells/ Equivalent Others' },
+  { description: 'CCTV Camera', make: 'CP Plus / Hikvision / Tyco / Honeywell/ Equivalent Others' },
+  { description: 'ABT Meter', make: 'Secure/Discom Approved' }
+];

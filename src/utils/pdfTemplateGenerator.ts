@@ -78,6 +78,14 @@ export const generateInvoiceHtml = (
           .grand-total { border-top: 2px solid #333; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 18px; }
           .footer { margin-top: 60px; border-top: 1px solid #eee; padding-top: 20px; color: #999; font-size: 12px; }
           .bank-details { background: #fdfdfd; padding: 15px; border-radius: 5px; margin-top: 20px; }
+          
+          @media print {
+            html, body { height: auto !important; }
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+          }
         </style>
       </head>
       <body>
