@@ -41,6 +41,8 @@ export default function CreateBOMScreen() {
   const [contingencyRate, setContingencyRate] = useState('0');
   const [isItemTaxEnabled, setIsItemTaxEnabled] = useState(true);
   const [isColumnFrozen, setIsColumnFrozen] = useState(true);
+  const [isWordWrap, setIsWordWrap] = useState(false);
+  const [frozenWidth, setFrozenWidth] = useState(140);
   const [inventorySearch, setInventorySearch] = useState('');
   const [notes, setNotes] = useState('Above Pricing is inclusive of supply of above material & installation but excluding the following:\n1. CCTV Surveillance System charges shall be extra\n2. Project insurance shall be in client scope\n3. Temporary electricity connection during construction period shall be client responsibility\n4. Tax shall be extra as actual\n5. Boundary Fencing shall be in client scope\n6. Local issue shall be takencare by client\n7. Extra material shall be taken by Solveig solar pvt ltd\n8. Full-time service support for a period of 3 months from date of commissioning\n9. Defect liability period is not applicable');
 
@@ -387,80 +389,131 @@ export default function CreateBOMScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={[styles.sectionHeader, { marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+          <View style={[styles.sectionHeader, { marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }]}>
             <Text style={styles.sectionTitle}>Bill of Materials</Text>
-            <TouchableOpacity 
-              onPress={() => setIsColumnFrozen(!isColumnFrozen)} 
-              activeOpacity={0.7}
-              style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: isColumnFrozen ? '#E0F2FE' : '#F3F4F6', borderRadius: 16, borderWidth: 1, borderColor: isColumnFrozen ? '#7DD3FC' : '#D1D5DB' }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '600', color: isColumnFrozen ? '#0284C7' : '#6B7280' }}>
-                {isColumnFrozen ? '❄️ Frozen Mode' : '↔️ Scroll Mode'}
-              </Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {isColumnFrozen && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8, backgroundColor: '#F3F4F6', borderRadius: 16, paddingHorizontal: 4 }}>
+                  <TouchableOpacity onPress={() => setFrozenWidth(Math.max(80, frozenWidth - 10))} style={{ padding: 4 }}>
+                    <Text style={{ fontSize: 18, color: '#6B7280' }}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 10, color: '#6B7280', marginHorizontal: 4 }}>Width</Text>
+                  <TouchableOpacity onPress={() => setFrozenWidth(Math.min(250, frozenWidth + 10))} style={{ padding: 4 }}>
+                    <Text style={{ fontSize: 18, color: '#6B7280' }}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              <TouchableOpacity 
+                onPress={() => setIsWordWrap(!isWordWrap)} 
+                activeOpacity={0.7}
+                style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: isWordWrap ? '#FDF2F8' : '#F3F4F6', borderRadius: 16, borderWidth: 1, borderColor: isWordWrap ? '#F9A8D4' : '#D1D5DB', marginRight: 6 }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '600', color: isWordWrap ? '#DB2777' : '#6B7280' }}>
+                  {isWordWrap ? '📝 Wrapped' : 'Wrap'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => setIsColumnFrozen(!isColumnFrozen)} 
+                activeOpacity={0.7}
+                style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: isColumnFrozen ? '#E0F2FE' : '#F3F4F6', borderRadius: 16, borderWidth: 1, borderColor: isColumnFrozen ? '#7DD3FC' : '#D1D5DB' }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '600', color: isColumnFrozen ? '#0284C7' : '#6B7280' }}>
+                  {isColumnFrozen ? '❄️ Frozen' : 'Scroll'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <View style={{ flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
-            {/* Frozen Left Columns */}
-            {isColumnFrozen && (
-              <View style={{ borderRightWidth: 2, borderColor: '#E5E7EB', backgroundColor: '#FFF', zIndex: 1, elevation: 1 }}>
-                <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
-                  <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>
-                  <Text style={[styles.tableHeaderCell, { width: 140, borderRightWidth: 0 }]}>Material Name</Text>
-                </View>
-                {items.map((item, index) => (
-                  <View key={`frozen-${index}`} style={[styles.tableRow, { height: 44, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
-                    <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280', height: 44, paddingTop: 14 }]}>{index + 1}</Text>
-                    <TextInput style={[styles.tableInput, { width: 140, borderRightWidth: 0, height: 44, fontSize: 11 }]} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />
+          {/* Table Header Calculation */}
+          {(() => {
+            const rowHeight = isWordWrap ? 80 : 44;
+            return (
+              <View style={{ flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
+                {/* Frozen Left Columns */}
+                {isColumnFrozen && (
+                  <View style={{ borderRightWidth: 2, borderColor: '#E5E7EB', backgroundColor: '#FFF', zIndex: 1, elevation: 1 }}>
+                    <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
+                      <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>
+                      <Text style={[styles.tableHeaderCell, { width: frozenWidth, borderRightWidth: 0 }]}>Material Name</Text>
+                    </View>
+                    {items.map((item, index) => (
+                      <View key={`frozen-${index}`} style={[styles.tableRow, { height: rowHeight, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
+                        <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280', height: rowHeight, paddingTop: isWordWrap ? 30 : 14 }]}>{index + 1}</Text>
+                        <TextInput 
+                          style={[styles.tableInput, { width: frozenWidth, borderRightWidth: 0, height: rowHeight, fontSize: 11 }]} 
+                          value={item.description} 
+                          onChangeText={(v) => updateItem(index, 'description', v)} 
+                          placeholder="Name"
+                          multiline={isWordWrap}
+                          textAlignVertical={isWordWrap ? 'top' : 'center'}
+                        />
+                      </View>
+                    ))}
+                    <View style={{ height: 36, backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB' }} />
                   </View>
-                ))}
-                <View style={{ height: 36, backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB' }} />
-              </View>
-            )}
+                )}
 
-            {/* Scrollable Right Columns */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={true} persistentScrollbar={true} style={{ flex: 1 }}>
-              <View>
-                <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
-                  {!isColumnFrozen && <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>}
-                  {!isColumnFrozen && <Text style={[styles.tableHeaderCell, { width: 200 }]}>Material Name</Text>}
-                  <Text style={[styles.tableHeaderCell, { width: 100 }]}>Make</Text>
-                  <Text style={[styles.tableHeaderCell, { width: 80 }]}>UOM</Text>
-                  <Text style={[styles.tableHeaderCell, { width: 180 }]}>Specifications</Text>
-                  <Text style={[styles.tableHeaderCell, { width: 60 }]}>Qty</Text>
-                  <Text style={[styles.tableHeaderCell, { width: 90 }]}>Price</Text>
-                  <Text style={[styles.tableHeaderCell, { width: 60 }]}>GST %</Text>
-                  <Text style={[styles.tableHeaderCell, { width: 120 }]}>Remark</Text>
-                  <Text style={[styles.tableHeaderCell, { width: 80, borderRightWidth: 0, textAlign: 'center' }]}>Actions</Text>
-                </View>
+                {/* Scrollable Right Columns */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={true} persistentScrollbar={true} style={{ flex: 1 }}>
+                  <View>
+                    <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
+                      {!isColumnFrozen && <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>}
+                      {!isColumnFrozen && <Text style={[styles.tableHeaderCell, { width: frozenWidth }]}>Material Name</Text>}
+                      <Text style={[styles.tableHeaderCell, { width: 100 }]}>Make</Text>
+                      <Text style={[styles.tableHeaderCell, { width: 80 }]}>UOM</Text>
+                      <Text style={[styles.tableHeaderCell, { width: 180 }]}>Specifications</Text>
+                      <Text style={[styles.tableHeaderCell, { width: 60 }]}>Qty</Text>
+                      <Text style={[styles.tableHeaderCell, { width: 90 }]}>Price</Text>
+                      <Text style={[styles.tableHeaderCell, { width: 60 }]}>GST %</Text>
+                      <Text style={[styles.tableHeaderCell, { width: 120 }]}>Remark</Text>
+                      <Text style={[styles.tableHeaderCell, { width: 80, borderRightWidth: 0, textAlign: 'center' }]}>Actions</Text>
+                    </View>
 
-                {items.map((item, index) => (
-                  <View key={`scroll-${index}`} style={[styles.tableRow, { height: 44, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
-                    {!isColumnFrozen && <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280', height: 44, paddingTop: 14 }]}>{index + 1}</Text>}
-                    {!isColumnFrozen && <TextInput style={[styles.tableInput, { width: 200, height: 44 }]} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />}
-                    <TextInput style={[styles.tableInput, { width: 100, height: 44 }]} value={item.make} onChangeText={(v) => updateItem(index, 'make', v)} placeholder="Make" />
-                    <TextInput style={[styles.tableInput, { width: 80, height: 44 }]} value={item.uom} onChangeText={(v) => updateItem(index, 'uom', v)} placeholder="UOM" />
-                    <TextInput style={[styles.tableInput, { width: 180, height: 44 }]} value={item.specifications} onChangeText={(v) => updateItem(index, 'specifications', v)} placeholder="Specs" />
-                    <TextInput style={[styles.tableInput, { width: 60, height: 44 }]} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" />
-                    <TextInput style={[styles.tableInput, { width: 90, height: 44 }]} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" />
-                    <TextInput style={[styles.tableInput, { width: 60, height: 44 }]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" editable={isItemTaxEnabled} />
-                    <TextInput style={[styles.tableInput, { width: 120, height: 44, borderRightWidth: 0 }]} value={item.remark} onChangeText={(v) => updateItem(index, 'remark', v)} placeholder="Remark" />
-                    <View style={[styles.tableActionCell, { width: 80, height: 44 }]}>
-                      <TouchableOpacity onPress={() => { setActiveItemIndex(index); setModalVisible(true); }} style={styles.tableIconBtn}>
-                        <Plus size={16} color="#059669" />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => removeItem(index)} style={styles.tableIconBtn}>
-                        <Trash2 size={16} color="#EF4444" />
-                      </TouchableOpacity>
+                    {items.map((item, index) => (
+                      <View key={`scroll-${index}`} style={[styles.tableRow, { height: rowHeight, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
+                        {!isColumnFrozen && <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280', height: rowHeight, paddingTop: isWordWrap ? 30 : 14 }]}>{index + 1}</Text>}
+                        {!isColumnFrozen && (
+                          <TextInput 
+                            style={[styles.tableInput, { width: frozenWidth, height: rowHeight, fontSize: 11 }]} 
+                            value={item.description} 
+                            onChangeText={(v) => updateItem(index, 'description', v)} 
+                            placeholder="Name" 
+                            multiline={isWordWrap}
+                            textAlignVertical={isWordWrap ? 'top' : 'center'}
+                          />
+                        )}
+                        <TextInput style={[styles.tableInput, { width: 100, height: rowHeight }]} value={item.make} onChangeText={(v) => updateItem(index, 'make', v)} placeholder="Make" />
+                        <TextInput style={[styles.tableInput, { width: 80, height: rowHeight }]} value={item.uom} onChangeText={(v) => updateItem(index, 'uom', v)} placeholder="UOM" />
+                        <TextInput 
+                          style={[styles.tableInput, { width: 180, height: rowHeight }]} 
+                          value={item.specifications} 
+                          onChangeText={(v) => updateItem(index, 'specifications', v)} 
+                          placeholder="Specs" 
+                          multiline={isWordWrap}
+                          textAlignVertical={isWordWrap ? 'top' : 'center'}
+                        />
+                        <TextInput style={[styles.tableInput, { width: 60, height: rowHeight }]} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" />
+                        <TextInput style={[styles.tableInput, { width: 90, height: rowHeight }]} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" />
+                        <TextInput style={[styles.tableInput, { width: 60, height: rowHeight }]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" editable={isItemTaxEnabled} />
+                        <TextInput style={[styles.tableInput, { width: 120, height: rowHeight, borderRightWidth: 0 }]} value={item.remark} onChangeText={(v) => updateItem(index, 'remark', v)} placeholder="Remark" />
+                        <View style={[styles.tableActionCell, { width: 80, height: rowHeight }]}>
+                          <TouchableOpacity onPress={() => { setActiveItemIndex(index); setModalVisible(true); }} style={styles.tableIconBtn}>
+                            <Plus size={16} color="#059669" />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => removeItem(index)} style={styles.tableIconBtn}>
+                            <Trash2 size={16} color="#EF4444" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                    <View style={{ height: 36, backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
+                      <Text style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 'bold', letterSpacing: 1 }}>◀  SWIPE HERE TO SCROLL HORIZONTALLY  ▶</Text>
                     </View>
                   </View>
-                ))}
-                <View style={{ height: 36, backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
-                  <Text style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 'bold', letterSpacing: 1 }}>◀  SWIPE HERE TO SCROLL HORIZONTALLY  ▶</Text>
-                </View>
+                </ScrollView>
               </View>
-            </ScrollView>
-          </View>
+            );
+          })()}
 
           <TouchableOpacity onPress={addItem} style={[styles.addItemBottomButton, { marginTop: 12 }]}>
             <Plus size={16} color="#059669" />
