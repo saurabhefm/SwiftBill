@@ -40,6 +40,7 @@ export default function CreateBOMScreen() {
   const [profitRate, setProfitRate] = useState('0');
   const [contingencyRate, setContingencyRate] = useState('0');
   const [isItemTaxEnabled, setIsItemTaxEnabled] = useState(true);
+  const [isColumnFrozen, setIsColumnFrozen] = useState(true);
   const [inventorySearch, setInventorySearch] = useState('');
   const [notes, setNotes] = useState('Above Pricing is inclusive of supply of above material & installation but excluding the following:\n1. CCTV Surveillance System charges shall be extra\n2. Project insurance shall be in client scope\n3. Temporary electricity connection during construction period shall be client responsibility\n4. Tax shall be extra as actual\n5. Boundary Fencing shall be in client scope\n6. Local issue shall be takencare by client\n7. Extra material shall be taken by Solveig solar pvt ltd\n8. Full-time service support for a period of 3 months from date of commissioning\n9. Defect liability period is not applicable');
 
@@ -386,30 +387,43 @@ export default function CreateBOMScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
+          <View style={[styles.sectionHeader, { marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
             <Text style={styles.sectionTitle}>Bill of Materials</Text>
+            <TouchableOpacity 
+              onPress={() => setIsColumnFrozen(!isColumnFrozen)} 
+              activeOpacity={0.7}
+              style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: isColumnFrozen ? '#E0F2FE' : '#F3F4F6', borderRadius: 16, borderWidth: 1, borderColor: isColumnFrozen ? '#7DD3FC' : '#D1D5DB' }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '600', color: isColumnFrozen ? '#0284C7' : '#6B7280' }}>
+                {isColumnFrozen ? '❄️ Frozen Mode' : '↔️ Scroll Mode'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={{ flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
             {/* Frozen Left Columns */}
-            <View style={{ borderRightWidth: 2, borderColor: '#E5E7EB', backgroundColor: '#FFF', zIndex: 1, elevation: 1 }}>
-              <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
-                <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>
-                <Text style={[styles.tableHeaderCell, { width: 200, borderRightWidth: 0 }]}>Material Name</Text>
-              </View>
-              {items.map((item, index) => (
-                <View key={`frozen-${index}`} style={[styles.tableRow, { height: 44, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
-                  <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280', height: 44, paddingTop: 14 }]}>{index + 1}</Text>
-                  <TextInput style={[styles.tableInput, { width: 200, borderRightWidth: 0, height: 44 }]} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />
+            {isColumnFrozen && (
+              <View style={{ borderRightWidth: 2, borderColor: '#E5E7EB', backgroundColor: '#FFF', zIndex: 1, elevation: 1 }}>
+                <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
+                  <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>
+                  <Text style={[styles.tableHeaderCell, { width: 140, borderRightWidth: 0 }]}>Material Name</Text>
                 </View>
-              ))}
-              <View style={{ height: 36, backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB' }} />
-            </View>
+                {items.map((item, index) => (
+                  <View key={`frozen-${index}`} style={[styles.tableRow, { height: 44, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
+                    <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280', height: 44, paddingTop: 14 }]}>{index + 1}</Text>
+                    <TextInput style={[styles.tableInput, { width: 140, borderRightWidth: 0, height: 44, fontSize: 11 }]} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />
+                  </View>
+                ))}
+                <View style={{ height: 36, backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB' }} />
+              </View>
+            )}
 
             {/* Scrollable Right Columns */}
             <ScrollView horizontal showsHorizontalScrollIndicator={true} persistentScrollbar={true} style={{ flex: 1 }}>
               <View>
                 <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
+                  {!isColumnFrozen && <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>}
+                  {!isColumnFrozen && <Text style={[styles.tableHeaderCell, { width: 200 }]}>Material Name</Text>}
                   <Text style={[styles.tableHeaderCell, { width: 100 }]}>Make</Text>
                   <Text style={[styles.tableHeaderCell, { width: 80 }]}>UOM</Text>
                   <Text style={[styles.tableHeaderCell, { width: 180 }]}>Specifications</Text>
@@ -422,6 +436,8 @@ export default function CreateBOMScreen() {
 
                 {items.map((item, index) => (
                   <View key={`scroll-${index}`} style={[styles.tableRow, { height: 44, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
+                    {!isColumnFrozen && <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280', height: 44, paddingTop: 14 }]}>{index + 1}</Text>}
+                    {!isColumnFrozen && <TextInput style={[styles.tableInput, { width: 200, height: 44 }]} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />}
                     <TextInput style={[styles.tableInput, { width: 100, height: 44 }]} value={item.make} onChangeText={(v) => updateItem(index, 'make', v)} placeholder="Make" />
                     <TextInput style={[styles.tableInput, { width: 80, height: 44 }]} value={item.uom} onChangeText={(v) => updateItem(index, 'uom', v)} placeholder="UOM" />
                     <TextInput style={[styles.tableInput, { width: 180, height: 44 }]} value={item.specifications} onChangeText={(v) => updateItem(index, 'specifications', v)} placeholder="Specs" />
