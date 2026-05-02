@@ -17,9 +17,6 @@ export default function RootLayout() {
     }).catch((e) => {
       console.error('[Boot] Splash screen hide failed:', e);
     });
-    
-    setReady(true);
-    console.log('[Boot] setReady(true) called');
 
     async function startEngine() {
       try {
@@ -31,6 +28,9 @@ export default function RootLayout() {
         console.log('[System] Database Engine Connected');
       } catch (e) {
         console.error('[System] Engine Failure', e);
+      } finally {
+        setReady(true);
+        console.log('[Boot] setReady(true) called after DB init');
       }
     }
     startEngine();

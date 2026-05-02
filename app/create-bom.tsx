@@ -28,7 +28,7 @@ interface BOMItem {
 
 
 export default function CreateBOMScreen() {
-  const { id, presetCapacity, allMaterials } = useLocalSearchParams();
+  const { id, presetCapacity, allMaterials, newProjectName } = useLocalSearchParams();
   const isEditing = !!id;
 
   const [projectName, setProjectName] = useState('');
@@ -105,14 +105,16 @@ export default function CreateBOMScreen() {
     if (isEditing) {
       loadBOM();
     } else if (presetCapacity) {
-      loadPreset(parseFloat(presetCapacity as string));
+      loadPreset(parseFloat(presetCapacity as string), newProjectName as string);
     } else if (allMaterials) {
-      loadAllMaterialsPreset();
+      loadAllMaterialsPreset(newProjectName as string);
+    } else if (newProjectName) {
+      setProjectName(newProjectName as string);
     }
     loadInventory();
-  }, [id, presetCapacity, allMaterials]);
+  }, [id, presetCapacity, allMaterials, newProjectName]);
 
-  const loadPreset = (capacity: number) => {
+  const loadPreset = (capacity: number, name?: string) => {
     if (isNaN(capacity) || capacity <= 0) return;
     
     setProjectCapacity(capacity.toString());
@@ -134,10 +136,10 @@ export default function CreateBOMScreen() {
     });
     
     setItems(presetItems);
-    setProjectName(`${capacity} MWp Solar Project`);
+    setProjectName(name || `${capacity} MWp Solar Project`);
   };
 
-  const loadAllMaterialsPreset = () => {
+  const loadAllMaterialsPreset = (name?: string) => {
     const presetItems: BOMItem[] = ALL_MATERIALS_PRESET.map(item => ({
       ...defaultEmptyItem,
       description: item.description,
@@ -145,7 +147,7 @@ export default function CreateBOMScreen() {
       quantity: '0',
     }));
     setItems(presetItems);
-    if (!projectName) setProjectName(`New Solar Project`);
+    setProjectName(name || `New Solar Project`);
   };
 
   const loadInventory = async () => {
@@ -388,44 +390,61 @@ export default function CreateBOMScreen() {
             <Text style={styles.sectionTitle}>Bill of Materials</Text>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.tableContainer}>
-            <View>
-              <View style={styles.tableHeaderRow}>
+          <View style={{ flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
+            {/* Frozen Left Columns */}
+            <View style={{ borderRightWidth: 2, borderColor: '#E5E7EB', backgroundColor: '#FFF', zIndex: 1, elevation: 1 }}>
+              <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
                 <Text style={[styles.tableHeaderCell, { width: 40, textAlign: 'center' }]}>#</Text>
-                <Text style={[styles.tableHeaderCell, { width: 200 }]}>Material Name</Text>
-                <Text style={[styles.tableHeaderCell, { width: 100 }]}>Make</Text>
-                <Text style={[styles.tableHeaderCell, { width: 80 }]}>UOM</Text>
-                <Text style={[styles.tableHeaderCell, { width: 180 }]}>Specifications</Text>
-                <Text style={[styles.tableHeaderCell, { width: 60 }]}>Qty</Text>
-                <Text style={[styles.tableHeaderCell, { width: 90 }]}>Price</Text>
-                <Text style={[styles.tableHeaderCell, { width: 60 }]}>GST %</Text>
-                <Text style={[styles.tableHeaderCell, { width: 120 }]}>Remark</Text>
-                <Text style={[styles.tableHeaderCell, { width: 80, borderRightWidth: 0, textAlign: 'center' }]}>Actions</Text>
+                <Text style={[styles.tableHeaderCell, { width: 200, borderRightWidth: 0 }]}>Material Name</Text>
               </View>
-
               {items.map((item, index) => (
-                <View key={index} style={styles.tableRow}>
-                  <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280' }]}>{index + 1}</Text>
-                  <TextInput style={[styles.tableInput, { width: 200 }]} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />
-                  <TextInput style={[styles.tableInput, { width: 100 }]} value={item.make} onChangeText={(v) => updateItem(index, 'make', v)} placeholder="Make" />
-                  <TextInput style={[styles.tableInput, { width: 80 }]} value={item.uom} onChangeText={(v) => updateItem(index, 'uom', v)} placeholder="UOM" />
-                  <TextInput style={[styles.tableInput, { width: 180 }]} value={item.specifications} onChangeText={(v) => updateItem(index, 'specifications', v)} placeholder="Specs" />
-                  <TextInput style={[styles.tableInput, { width: 60 }]} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" />
-                  <TextInput style={[styles.tableInput, { width: 90 }]} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" />
-                  <TextInput style={[styles.tableInput, { width: 60 }]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" editable={isItemTaxEnabled} />
-                  <TextInput style={[styles.tableInput, { width: 120, borderRightWidth: 0 }]} value={item.remark} onChangeText={(v) => updateItem(index, 'remark', v)} placeholder="Remark" />
-                  <View style={[styles.tableActionCell, { width: 80 }]}>
-                    <TouchableOpacity onPress={() => { setActiveItemIndex(index); setModalVisible(true); }} style={styles.tableIconBtn}>
-                      <Plus size={16} color="#059669" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => removeItem(index)} style={styles.tableIconBtn}>
-                      <Trash2 size={16} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
+                <View key={`frozen-${index}`} style={[styles.tableRow, { height: 44, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
+                  <Text style={[styles.tableCellText, { width: 40, textAlign: 'center', fontWeight: '600', color: '#6B7280', height: 44, paddingTop: 14 }]}>{index + 1}</Text>
+                  <TextInput style={[styles.tableInput, { width: 200, borderRightWidth: 0, height: 44 }]} value={item.description} onChangeText={(v) => updateItem(index, 'description', v)} placeholder="Name" />
                 </View>
               ))}
+              <View style={{ height: 36, backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB' }} />
             </View>
-          </ScrollView>
+
+            {/* Scrollable Right Columns */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={true} persistentScrollbar={true} style={{ flex: 1 }}>
+              <View>
+                <View style={[styles.tableHeaderRow, { height: 36, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }]}>
+                  <Text style={[styles.tableHeaderCell, { width: 100 }]}>Make</Text>
+                  <Text style={[styles.tableHeaderCell, { width: 80 }]}>UOM</Text>
+                  <Text style={[styles.tableHeaderCell, { width: 180 }]}>Specifications</Text>
+                  <Text style={[styles.tableHeaderCell, { width: 60 }]}>Qty</Text>
+                  <Text style={[styles.tableHeaderCell, { width: 90 }]}>Price</Text>
+                  <Text style={[styles.tableHeaderCell, { width: 60 }]}>GST %</Text>
+                  <Text style={[styles.tableHeaderCell, { width: 120 }]}>Remark</Text>
+                  <Text style={[styles.tableHeaderCell, { width: 80, borderRightWidth: 0, textAlign: 'center' }]}>Actions</Text>
+                </View>
+
+                {items.map((item, index) => (
+                  <View key={`scroll-${index}`} style={[styles.tableRow, { height: 44, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', backgroundColor: '#FFF' }]}>
+                    <TextInput style={[styles.tableInput, { width: 100, height: 44 }]} value={item.make} onChangeText={(v) => updateItem(index, 'make', v)} placeholder="Make" />
+                    <TextInput style={[styles.tableInput, { width: 80, height: 44 }]} value={item.uom} onChangeText={(v) => updateItem(index, 'uom', v)} placeholder="UOM" />
+                    <TextInput style={[styles.tableInput, { width: 180, height: 44 }]} value={item.specifications} onChangeText={(v) => updateItem(index, 'specifications', v)} placeholder="Specs" />
+                    <TextInput style={[styles.tableInput, { width: 60, height: 44 }]} value={item.quantity} onChangeText={(v) => updateItem(index, 'quantity', v)} keyboardType="numeric" />
+                    <TextInput style={[styles.tableInput, { width: 90, height: 44 }]} value={item.unitPrice} onChangeText={(v) => updateItem(index, 'unitPrice', v)} keyboardType="numeric" />
+                    <TextInput style={[styles.tableInput, { width: 60, height: 44 }]} value={item.taxRate} onChangeText={(v) => updateItem(index, 'taxRate', v)} keyboardType="numeric" editable={isItemTaxEnabled} />
+                    <TextInput style={[styles.tableInput, { width: 120, height: 44, borderRightWidth: 0 }]} value={item.remark} onChangeText={(v) => updateItem(index, 'remark', v)} placeholder="Remark" />
+                    <View style={[styles.tableActionCell, { width: 80, height: 44 }]}>
+                      <TouchableOpacity onPress={() => { setActiveItemIndex(index); setModalVisible(true); }} style={styles.tableIconBtn}>
+                        <Plus size={16} color="#059669" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => removeItem(index)} style={styles.tableIconBtn}>
+                        <Trash2 size={16} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+                <View style={{ height: 36, backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
+                  <Text style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 'bold', letterSpacing: 1 }}>◀  SWIPE HERE TO SCROLL HORIZONTALLY  ▶</Text>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
 
           <TouchableOpacity onPress={addItem} style={[styles.addItemBottomButton, { marginTop: 12 }]}>
             <Plus size={16} color="#059669" />
