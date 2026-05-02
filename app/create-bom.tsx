@@ -330,9 +330,10 @@ export default function CreateBOMScreen() {
           notes,
           projectCapacity: parseFloat(projectCapacity) || 30,
           profitRate: parseFloat(profitRate) || 0,
-          totalBasicCost
+          totalBasicCost,
+          isItemTaxEnabled
         },
-        items.map(i => ({
+        items.filter(i => (parseFloat(i.quantity) || 0) > 0).map(i => ({
           description: i.description,
           specifications: i.specifications,
           make: i.make,

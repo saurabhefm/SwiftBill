@@ -44,6 +44,8 @@ export const generateBOMHtml = (
 ) => {
   const currencySymbol = profile.currency || '₹';
   
+  const hasItemTaxes = bom.isItemTaxEnabled !== false;
+
   const itemsHtml = items.map((item, index) => `
     <tr>
       <td style="text-align: center;">${index + 1}</td>
@@ -53,7 +55,7 @@ export const generateBOMHtml = (
       <td style="text-align: center;">${item.quantity}</td>
       <td style="text-align: center;">${item.uom || '-'}</td>
       <td style="text-align: right;">${currencySymbol}${item.unitPrice.toLocaleString()}</td>
-      <td style="text-align: center;">${item.taxRate}%</td>
+      ${hasItemTaxes ? `<td style="text-align: center;">${item.taxRate}%</td>` : ''}
       <td style="text-align: right; font-weight: bold;">${currencySymbol}${item.total.toLocaleString()}</td>
       <td style="font-size: 10px;">${item.remark || '-'}</td>
     </tr>
@@ -126,12 +128,12 @@ export const generateBOMHtml = (
             <tr>
               <th style="width: 4%;">Sr.</th>
               <th style="width: 15%;">Material</th>
-              <th style="width: 25%;">Specifications</th>
+              <th style="width: ${hasItemTaxes ? '25%' : '30%'};">Specifications</th>
               <th style="width: 12%;">Make</th>
               <th style="width: 5%; text-align: center;">Qty</th>
               <th style="width: 6%; text-align: center;">UOM</th>
               <th style="width: 10%; text-align: right;">Rate</th>
-              <th style="width: 5%; text-align: center;">GST</th>
+              ${hasItemTaxes ? `<th style="width: 5%; text-align: center;">GST</th>` : ''}
               <th style="width: 10%; text-align: right;">Amount</th>
               <th style="width: 8%;">Remark</th>
             </tr>
